@@ -187,7 +187,7 @@ fn idx(cols: usize, row: usize, col: usize) usize {
 
 pub fn solve(puzzle: *const Puzzle, candidates: []const Pos, random: std.Random, allocator: std.mem.Allocator) !Individual {
     const populationSize: usize = 200;
-    const generations: usize = 100000;
+    const generations: usize = 1000;
     const eliteCount: usize = 10;
 
     //initialize population
@@ -409,6 +409,54 @@ pub fn createRandomIndividual(numCandidates: usize, budget: u32, random: std.Ran
     };
 }
 
+pub fn computeAdjacencyBonus(candidates: []const Pos, walls: []const bool, puzzle: *const Puzzle) i32 {
+    const directions = [_][2]i8{ .{-1, 0}, .{1, 0}, .{0, -1}, .{0, 1}};
+    var bonus: i32 = 0;
+
+    for(candidates, 0..) |pos, i| {
+        if(!walls[i]) continue;
+
+        var neighborCount: i32 = 0;
+
+        for(directions) |direction| {
+            const newRowSigned = @as(i64, @intCast(pos.row)) + direction[0];
+            const newColSigned = @as(i64, @intCast(pos.col)) + direction[1];
+
+            if(newRowSigned < 0 or newRowSigned >= puzzle.rows or newColSigned < 0 or newColSigned >= puzzle.cols) {
+                neighborCount += 1;
+                continue;
+            }
+
+            const neighborRow = @as(usize, @intCast(newRowSigned));
+            const neighborCol = @as(usize, @intCast(newColSigned));
+            const neighborType = puzzle.grid[neighborRow][neighborCol].type;
+
+            if(neighborType == .water or neighborType == .wall) { 
+                neighborCount += 1;
+                continue;
+            }
+
+            for(candidates, 0..) |other, j| {
+                if(j == i) continue;
+                if(walls[j] and other.row == neighborRow and other.col == neighborCol) {
+                    neighborCount += 1;
+                    break;
+                }
+            }
+        }
+
+        bonus += switch(neighborCount) {
+            0 => -3, //isolated, likely wasted (for some puzzles, this might not be ideal)
+            1 => 0, //weakly connected
+            2 => 2, //forming a line or a corner
+            3 => 3, //well connected
+            else => -2, //surrounded, penalize
+        };
+    }
+
+    return bonus;
+}
+
 pub fn evaluateFitness(individual: *Individual, candidates: []const Pos, puzzle: *const Puzzle, allocator: std.mem.Allocator) !void {
     var wallList: std.ArrayList(Pos) = .{};
     defer wallList.deinit(allocator);
@@ -423,12 +471,16 @@ pub fn evaluateFitness(individual: *Individual, candidates: []const Pos, puzzle:
     defer result.deinit();
 
     if(result.reachesBoundary) {
-        individual.score = 0;
+        const adjBonus = computeAdjacencyBonus(candidates, individual.walls, puzzle);
+        individual.score = -50 + adjBonus;
         individual.valid = false;
     } else {
-        individual.score = result.score;
+        const adjBonus = computeAdjacencyBonus(candidates, individual.walls, puzzle);
+        individual.score = result.score + @divTrunc(adjBonus, 2);
         individual.valid = true;
     }
+
+    
 }
 
 fn tournamentSelect(population: []Individual, random: std.Random) *const Individual {
