@@ -81,16 +81,32 @@ const Individual = struct {
     }
 };
 
-const BFSResult = struct {
+const BFSScratch = struct {
+    queue: []Pos,
     visited: []bool,
+    isWall: []bool,
+    allocator: std.mem.Allocator,
+
+    pub fn init(allocator: std.mem.Allocator, maxCells: usize) !BFSScratch {
+        return BFSScratch{
+            .queue = try allocator.alloc(Pos, maxCells),
+            .visited = try allocator.alloc(bool, maxCells),
+            .isWall = try allocator.alloc(bool, maxCells),
+            .allocator = allocator,
+        };
+    }
+
+    pub fn deinit(self: *BFSScratch) void {
+        self.allocator.free(self.queue);
+        self.allocator.free(self.visited);
+        self.allocator.free(self.isWall);
+    }
+};
+
+const BFSResult = struct {
     count: usize,
     score: i32,
     reachesBoundary: bool,
-    allocator: std.mem.Allocator,
-
-    pub fn deinit(self: *BFSResult) void {
-        self.allocator.free(self.visited);
-    }
 };
 
 const Cell = struct {
@@ -187,8 +203,14 @@ fn idx(cols: usize, row: usize, col: usize) usize {
 
 pub fn solve(puzzle: *const Puzzle, candidates: []const Pos, random: std.Random, allocator: std.mem.Allocator) !Individual {
     const populationSize: usize = 200;
-    const generations: usize = 1000;
-    const eliteCount: usize = 10;
+    const generations: usize = 100000;
+    const validEliteCount: usize = 5;
+    const invalidEliteCount: usize = 5;
+    const eliteCount: usize = validEliteCount + invalidEliteCount;
+    const mutationRate: usize = 30;
+
+    var scratch = try BFSScratch.init(allocator, puzzle.rows * puzzle.cols);
+    defer scratch.deinit();
 
     //initialize population
     var population = try allocator.alloc(Individual, populationSize); 
@@ -201,13 +223,16 @@ pub fn solve(puzzle: *const Puzzle, candidates: []const Pos, random: std.Random,
 
     for(population) |*individual| {
         individual.* = try createRandomIndividual(candidates.len, puzzle.budget, random, allocator);
-        try evaluateFitness(individual, candidates, puzzle, allocator);
+        try evaluateFitness(individual, candidates, puzzle, &scratch);
     }
 
     std.debug.print("Starting GA: {} candidates, budget {}, population {}\n", .{ candidates.len, puzzle.budget, populationSize });
 
+    // sort: valid first (descending score), then invalid (descending score)
     std.mem.sort(Individual, population, {}, struct {
         pub fn lessThan(_: void, a: Individual, b: Individual) bool {
+            if (a.valid and !b.valid) return true;
+            if (!a.valid and b.valid) return false;
             return b.score < a.score;
         }
     }.lessThan);
@@ -215,19 +240,49 @@ pub fn solve(puzzle: *const Puzzle, candidates: []const Pos, random: std.Random,
     std.debug.print("Gen 0: best score = {}\n", .{population[0].score});
 
     var bestSoFar: i32 = population[0].score;
+    var genTimer = try std.time.Timer.start();
 
     for(1..generations + 1) |generation| {
         var next = try allocator.alloc(Individual, populationSize);
 
-        for(0..eliteCount) |i| {
+        // copy elites: up to 5 valid + up to 5 invalid
+        var eliteIdx: usize = 0;
+        var validCopied: usize = 0;
+        var invalidCopied: usize = 0;
+
+        for(population) |*ind| {
+            if (eliteIdx >= eliteCount) break;
+            const keep = (ind.valid and validCopied < validEliteCount) or
+                         (!ind.valid and invalidCopied < invalidEliteCount);
+            if (keep) {
+                const walls = try allocator.alloc(bool, candidates.len);
+                @memcpy(walls, ind.walls);
+                next[eliteIdx] = Individual{
+                    .walls = walls,
+                    .score = ind.score,
+                    .valid = ind.valid,
+                    .allocator = allocator,
+                };
+                if (ind.valid) validCopied += 1 else invalidCopied += 1;
+                eliteIdx += 1;
+            }
+        }
+
+        // if we didn't fill all elite slots (e.g. no valid solutions yet),
+        // fill remaining from the top of the sorted population
+        var fillFrom: usize = 0;
+        while (eliteIdx < eliteCount and fillFrom < populationSize) {
+            // skip individuals already copied (just take next best)
             const walls = try allocator.alloc(bool, candidates.len);
-            @memcpy(walls, population[i].walls);
-            next[i] = Individual{
+            @memcpy(walls, population[fillFrom].walls);
+            next[eliteIdx] = Individual{
                 .walls = walls,
-                .score = population[i].score,
-                .valid = population[i].valid,
+                .score = population[fillFrom].score,
+                .valid = population[fillFrom].valid,
                 .allocator = allocator,
             };
+            eliteIdx += 1;
+            fillFrom += 1;
         }
 
         for(eliteCount..populationSize) |i| {
@@ -236,11 +291,11 @@ pub fn solve(puzzle: *const Puzzle, candidates: []const Pos, random: std.Random,
             
             var child = try crossover(parent1, parent2, candidates.len, puzzle.budget, allocator);
 
-            if(random.intRangeLessThan(u32, 0, 100) < 20) { 
+            if(random.intRangeLessThan(u32, 0, 100) < mutationRate) { 
                 mutate(&child, random);
             }
 
-            try evaluateFitness(&child, candidates, puzzle, allocator);
+            try evaluateFitness(&child, candidates, puzzle, &scratch);
             next[i] = child;
         }
 
@@ -254,6 +309,8 @@ pub fn solve(puzzle: *const Puzzle, candidates: []const Pos, random: std.Random,
 
         std.mem.sort(Individual, population, {}, struct {
             pub fn lessThan(_: void, a: Individual, b: Individual) bool {
+                if (a.valid and !b.valid) return true;
+                if (!a.valid and b.valid) return false;
                 return b.score < a.score;
             }
         }.lessThan);
@@ -262,9 +319,11 @@ pub fn solve(puzzle: *const Puzzle, candidates: []const Pos, random: std.Random,
             bestSoFar = population[0].score;
             std.debug.print("Gen {}: NEW BEST = {}\n", .{ generation, bestSoFar });
         }
-   
-        if(generation % 100 == 0) {
-            std.debug.print("Gen {}: best score = {}\n", .{generation, population[0].score });
+ 
+        if(generation % 1000 == 0) {
+            const elapsed = genTimer.read();
+            const gensPerSec = @as(f64, @floatFromInt(generation)) / (@as(f64, @floatFromInt(elapsed)) / 1_000_000_000.0);
+            std.debug.print("Gen {}: best = {} ({d:.0} gens/sec)\n", .{generation, population[0].score, gensPerSec});
         }
     }
 
@@ -272,6 +331,7 @@ pub fn solve(puzzle: *const Puzzle, candidates: []const Pos, random: std.Random,
 
     const bestWalls = try allocator.alloc(bool, candidates.len);
     @memcpy(bestWalls, population[0].walls);
+
     return Individual {
         .walls = bestWalls,
         .score = population[0].score,
@@ -282,31 +342,27 @@ pub fn solve(puzzle: *const Puzzle, candidates: []const Pos, random: std.Random,
 
 //essentially basic bfs, with a scoring component added.
 //fan out from horse to boundary
-pub fn bfs(puzzle: *const Puzzle, solutionWalls: ?[]const Pos, allocator: std.mem.Allocator, earlyExit: bool) !BFSResult {
-    const maxCells = puzzle.rows * puzzle.cols;
-    const queue = try allocator.alloc(Pos, maxCells);
-    defer allocator.free(queue);
+pub fn bfs(puzzle: *const Puzzle, candidates: ?[]const Pos, walls: ?[]const bool, scratch: *BFSScratch, earlyExit: bool) !BFSResult {
     var head: usize = 0;
     var tail: usize = 0;
 
     const directions = [_][2]i8{ .{-1, 0}, .{1, 0}, .{0, -1}, .{0, 1}};
 
-    const visited = try allocator.alloc(bool, maxCells);
-    errdefer allocator.free(visited);
-    @memset(visited, false);
+    @memset(scratch.visited, false);
+    @memset(scratch.isWall, false);
 
-    var isWall = try allocator.alloc(bool, maxCells);
-    defer allocator.free(isWall);
-    @memset(isWall, false);
-
-    if(solutionWalls) |walls| {
-        for(walls) |w| {
-            isWall[idx(puzzle.cols, w.row, w.col)] = true;
+    if(candidates) |cands| {
+        if(walls) |w| {
+            for(cands, 0..) |pos, i| {
+                if(w[i]) {
+                    scratch.isWall[idx(puzzle.cols, pos.row, pos.col)] = true;
+                }
+            }
         }
     }
     
-    visited[idx(puzzle.cols, puzzle.horseRow, puzzle.horseCol)] = true;
-    queue[tail] = .{ .row = puzzle.horseRow, .col = puzzle.horseCol };
+    scratch.visited[idx(puzzle.cols, puzzle.horseRow, puzzle.horseCol)] = true;
+    scratch.queue[tail] = .{ .row = puzzle.horseRow, .col = puzzle.horseCol };
     tail += 1;
 
     var reachable: usize = 0;
@@ -315,7 +371,7 @@ pub fn bfs(puzzle: *const Puzzle, solutionWalls: ?[]const Pos, allocator: std.me
     var score: i32 = 0;
 
     while(head < tail) {
-        const current = queue[head];
+        const current = scratch.queue[head];
         head += 1;
         reachable += 1;
 
@@ -341,12 +397,12 @@ pub fn bfs(puzzle: *const Puzzle, solutionWalls: ?[]const Pos, allocator: std.me
             const neighborCol = @as(usize, @intCast(newColSigned));
             const neighborIndex = idx(puzzle.cols, neighborRow, neighborCol);
 
-            if(visited[neighborIndex]) continue;
+            if(scratch.visited[neighborIndex]) continue;
 
-            if(puzzle.grid[neighborRow][neighborCol].type == .water or puzzle.grid[neighborRow][neighborCol].type == .wall or isWall[neighborIndex]) continue;
+            if(puzzle.grid[neighborRow][neighborCol].type == .water or puzzle.grid[neighborRow][neighborCol].type == .wall or scratch.isWall[neighborIndex]) continue;
 
-            visited[neighborIndex] = true;
-            queue[tail] = .{ .row = neighborRow, .col = neighborCol };
+            scratch.visited[neighborIndex] = true;
+            scratch.queue[tail] = .{ .row = neighborRow, .col = neighborCol };
             tail += 1;
         }
 
@@ -368,9 +424,9 @@ pub fn bfs(puzzle: *const Puzzle, solutionWalls: ?[]const Pos, allocator: std.me
 
                 if(found) {
                     const partnerIndex = idx(puzzle.cols, partnerRow, partnerCol);
-                    if(!visited[partnerIndex] and !isWall[partnerIndex]) {
-                        visited[partnerIndex] = true;
-                        queue[tail] = . { .row = partnerRow, .col = partnerCol };
+                    if(!scratch.visited[partnerIndex] and !scratch.isWall[partnerIndex]) {
+                        scratch.visited[partnerIndex] = true;
+                        scratch.queue[tail] = . { .row = partnerRow, .col = partnerCol };
                         tail += 1;
                     }
                 }
@@ -379,11 +435,9 @@ pub fn bfs(puzzle: *const Puzzle, solutionWalls: ?[]const Pos, allocator: std.me
     }
 
     return BFSResult {
-        .visited = visited,
         .count = reachable,
         .score = score,
         .reachesBoundary = reachesBoundary,
-        .allocator = allocator,
     };
 }
 
@@ -448,39 +502,58 @@ pub fn computeAdjacencyBonus(candidates: []const Pos, walls: []const bool, puzzl
         bonus += switch(neighborCount) {
             0 => -3, //isolated, likely wasted (for some puzzles, this might not be ideal)
             1 => 0, //weakly connected
-            2 => 2, //forming a line or a corner
-            3 => 3, //well connected
+            2 => 3, //forming a line or a corner
+            3 => 2, //well connected
             else => -2, //surrounded, penalize
         };
-    }
 
+        //potentially add bonuses for distance from horse and boundary connections
+        //const horseDistRow = @as(i32, @intCast(pos.row)) - @as(i32, @intCast(puzzle.horseRow));
+        //const horseDistCol = @as(i32, @intCast(pos.col)) - @as(i32, @intCast(puzzle.horseCol));
+        //const horseDist = @abs(horseDistRow) + @abs(horseDistCol);
+
+        //bonus += @as(i32, @intCast(horseDist)) - 3;
+
+        //const minEdgeDist = @min(@min(pos.row, puzzle.rows - 1 - pos.row), @min(pos.col, puzzle.cols - 1 - pos.col));
+        //if(minEdgeDist == 0) {
+        //    bonus += 3;
+        //} else if(minEdgeDist == 1) {
+        //    bonus += 1;
+        //}
+    }
     return bonus;
 }
 
-pub fn evaluateFitness(individual: *Individual, candidates: []const Pos, puzzle: *const Puzzle, allocator: std.mem.Allocator) !void {
-    var wallList: std.ArrayList(Pos) = .{};
-    defer wallList.deinit(allocator);
+pub fn evaluateFitness(individual: *Individual, candidates: []const Pos, puzzle: *const Puzzle, scratch: *BFSScratch) !void {
+    const result = try bfs(puzzle, candidates, individual.walls, scratch, true);
 
-    for(candidates, 0..) |pos, i| {
-        if(individual.walls[i]) {
-            try wallList.append(allocator, pos);
-        }
-    }
-
-    var result = try bfs(puzzle, wallList.items, allocator, true);
-    defer result.deinit();
-
-    if(result.reachesBoundary) {
+    if (result.reachesBoundary) {
+        const reachable = @as(i32, @intCast(result.count));
         const adjBonus = computeAdjacencyBonus(candidates, individual.walls, puzzle);
-        individual.score = -50 + adjBonus;
+        individual.score = -reachable * 4 + adjBonus;
         individual.valid = false;
     } else {
-        const adjBonus = computeAdjacencyBonus(candidates, individual.walls, puzzle);
-        individual.score = result.score + @divTrunc(adjBonus, 2);
+        individual.score = result.score;
         individual.valid = true;
-    }
 
-    
+        // Prune wasted walls: remove any wall that doesn't affect validity or score
+        for (0..candidates.len) |i| {
+            if (!individual.walls[i]) continue;
+
+            // Temporarily remove the wall
+            individual.walls[i] = false;
+
+            const pruneResult = try bfs(puzzle, candidates, individual.walls, scratch, true);
+
+            if (!pruneResult.reachesBoundary and pruneResult.score >= individual.score) {
+                // Wall was useless, keep it removed and update score
+                individual.score = pruneResult.score;
+            } else {
+                // Wall is needed, put it back
+                individual.walls[i] = true;
+            }
+        }
+    }
 }
 
 fn tournamentSelect(population: []Individual, random: std.Random) *const Individual {
@@ -517,6 +590,15 @@ fn crossover(parent1: *const Individual, parent2: *const Individual, numCandidat
         }
     }
 
+    var debugCount: u32 = 0;
+    for(walls) |wall|  {
+        if(wall) debugCount += 1;
+    }
+
+    if(debugCount > budget) {
+        std.debug.print("BUG IN CROSSOVER: produced {} walls, budget is {}\n", .{ debugCount, budget });
+    }
+
     return Individual {
         .walls = walls,
         .score = 0,
@@ -526,25 +608,45 @@ fn crossover(parent1: *const Individual, parent2: *const Individual, numCandidat
 }
 
 fn mutate(individual: *Individual, random: std.Random) void {
-    //find a wall thats placed and remove it
-    //find an empty slot and place a wall there
-    const len = individual.walls.len;
+    const randomRoll = random.intRangeLessThan(u32, 0, 100);
+    const swaps: usize = if (randomRoll < 65) 1 else if (randomRoll < 85) 2 else 3;
 
-    var attempts: usize = 0;
-    while(attempts < len) : (attempts += 1) { 
-        const removeIndex = random.intRangeLessThan(usize, 0, len);
-        if(individual.walls[removeIndex]) {
-            individual.walls[removeIndex] = false;
-            break;
+    for (0..swaps) |_| {
+        // count placed walls
+        var wallCount: usize = 0;
+        for (individual.walls) |w| {
+            if (w) wallCount += 1;
         }
-    }
+        if (wallCount == 0) return;
 
-    attempts = 0;
-    while(attempts < len) : (attempts += 1) {
-        const addIndex = random.intRangeLessThan(usize, 0, len);
-        if(!individual.walls[addIndex]) {
-            individual.walls[addIndex] = true;
-            break;
+        // pick the Nth placed wall to remove
+        var target = random.intRangeLessThan(usize, 0, wallCount);
+        for (individual.walls, 0..) |w, i| {
+            if (w) {
+                if (target == 0) {
+                    individual.walls[i] = false;
+                    break;
+                }
+                target -= 1;
+            }
+        }
+
+        // count empty slots
+        var emptyCount: usize = 0;
+        for (individual.walls) |w| {
+            if (!w) emptyCount += 1;
+        }
+
+        // pick the Nth empty slot to fill
+        target = random.intRangeLessThan(usize, 0, emptyCount);
+        for (individual.walls, 0..) |w, i| {
+            if (!w) {
+                if (target == 0) {
+                    individual.walls[i] = true;
+                    break;
+                }
+                target -= 1;
+            }
         }
     }
 }
@@ -628,6 +730,35 @@ pub fn removePrePlacedWalls(puzzle: *Puzzle) void {
     }
 }
 
+pub fn readOptimalScore(allocator: std.mem.Allocator, inputPath: []const u8) ?i32 {
+    // replace .txt with .json
+    if (!std.mem.endsWith(u8, inputPath, ".txt")) return null;
+
+    const basePath = inputPath[0 .. inputPath.len - 4];
+    const jsonPath = std.fmt.allocPrint(allocator, "{s}.json", .{basePath}) catch return null;
+    defer allocator.free(jsonPath);
+
+    const content = std.fs.cwd().readFileAlloc(allocator, jsonPath, 1024 * 1024) catch return null;
+    defer allocator.free(content);
+
+    // search for "optimal_score": <value>
+    const key = "\"optimal_score\":";
+    const keyPos = std.mem.indexOf(u8, content, key) orelse return null;
+    const afterKey = content[keyPos + key.len ..];
+
+    // skip whitespace and optional quote
+    var i: usize = 0;
+    while (i < afterKey.len and (afterKey[i] == ' ' or afterKey[i] == '"')) : (i += 1) {}
+
+    // parse the number
+    var end: usize = i;
+    while (end < afterKey.len and (afterKey[end] >= '0' and afterKey[end] <= '9')) : (end += 1) {}
+
+    if (end == i) return null;
+
+    return std.fmt.parseInt(i32, afterKey[i..end], 10) catch null;
+}
+
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
@@ -649,32 +780,55 @@ pub fn main() !void {
     var puzzle = try parseInput(allocator, content);
     defer puzzle.deinit();
 
-    var initialReach = try bfs(&puzzle, null, allocator, true);
+    var scratch = try BFSScratch.init(allocator, puzzle.rows * puzzle.cols);
+    defer scratch.deinit();
+
+    const initialReach = try bfs(&puzzle, null, null, &scratch, true);
     std.debug.print("With pre-placed solution walls:\n", .{});
     std.debug.print("  Reachable: {}, Score: {}, Reaches boundary: {}\n\n", .{ initialReach.count, initialReach.score, initialReach.reachesBoundary });
-    initialReach.deinit();
 
     try puzzle.display();
     removePrePlacedWalls(&puzzle);
 
-    var fullReach = try bfs(&puzzle, null, allocator, false);
-    defer fullReach.deinit();
+    const fullReach = try bfs(&puzzle, null, null, &scratch, false);
+    const reachableMap = try allocator.alloc(bool, puzzle.rows * puzzle.cols);
+    defer allocator.free(reachableMap);
+    @memcpy(reachableMap, scratch.visited);
 
     std.debug.print("With pre-placed solution walls removed (full budget):\n", .{});
     std.debug.print("  Reachable: {}, Score: {}, Reaches boundary: {}\n\n", .{ fullReach.count, fullReach.score, fullReach.reachesBoundary });
 
-    const candidates = try getCandidateWalls(&puzzle, fullReach.visited, allocator);
+    const candidates = try getCandidateWalls(&puzzle, reachableMap, allocator);
     defer allocator.free(candidates);
 
+    var solveTimer = try std.time.Timer.start();
     var best = try solve(&puzzle, candidates, random, allocator);
     defer best.deinit();
+    const solveElapsed = solveTimer.read();
+    std.debug.print("\n=== TIMING ===\n", .{});
+    std.debug.print("  solve() total: {d:.3}s\n", .{@as(f64, @floatFromInt(solveElapsed)) / 1_000_000_000.0});
 
-    std.debug.print("BFS Result:\n", .{});
+    std.debug.print("\nBFS Result:\n", .{});
     std.debug.print("  Reachable Cells: {}\n", .{fullReach.count});
     std.debug.print("  Reaches boundary: {}\n\n", .{fullReach.reachesBoundary});
     std.debug.print("  Score from BFS: {}\n\n", .{fullReach.score});
     std.debug.print("  Candidate Wall Positions: {}\n", .{candidates.len});
 
+    const optimalScore = readOptimalScore(allocator, args[1]);
+
+    if(optimalScore) |optimal| {
+        std.debug.print("\nOptimal score: {}\n", .{optimal});
+        if(best.valid) {
+            const diff = optimal - best.score;
+            if(diff == 0) {
+                std.debug.print("  OPTIMAL SOLUTION FOUND!\n", .{});
+            } else {
+                std.debug.print("  Gap from optimal: {} points\n", .{diff});
+            }
+        } else {
+                std.debug.print("  No valid solution found to compare.\n", .{});
+        }
+    } 
     std.debug.print("\nFinal result:\n", .{});
     std.debug.print("  Score: {}\n", .{best.score});
     std.debug.print("  Valid: {}\n", .{best.valid});

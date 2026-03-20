@@ -1,0 +1,209 @@
+With pre-placed solution walls:
+  Reachable: 75, Score: 75, Reaches boundary: true
+
+Grid: 19 rows x 19 cols
+Horse at: (6, 9)
+Budget: 11
+
+ 0 |  .  .  ~  ~  .  .  .  ~  ~  ~  ~  .  .  .  .  .  .  ~  ~ 
+ 1 |  .  ~  ~  ~  ~  .  .  ~  ~  ~  .  .  .  .  ~  ~  ~  ~  ~ 
+ 2 |  ~  ~  ~  ~  ~  .  .  ~  ~  ~  ~  .  .  ~  ~  ~  ~  ~  . 
+ 3 |  ~  ~  ~  ~  ~  .  .  ~  ~  ~  ~  .  .  ~  ~  ~  ~  ~  . 
+ 4 |  ~  ~  ~  ~  ~  .  .  .  ~  ~  .  .  .  ~  ~  ~  ~  .  . 
+ 5 |  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 
+ 6 |  .  ~  .  .  .  .  .  .  .  H  .  ~  .  .  .  .  .  .  ~ 
+ 7 |  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 
+ 8 |  .  .  ~  .  ~  ~  ~  .  ~  .  ~  .  ~  .  ~  .  ~  .  . 
+ 9 |  .  .  .  .  ~  .  .  .  ~  .  ~  .  ~  .  ~  .  ~  .  . 
+10 |  .  .  ~  .  ~  .  ~  .  ~  .  ~  .  ~  .  ~  .  .  .  . 
+11 |  .  .  ~  .  ~  .  .  .  ~  .  ~  .  ~  .  ~  ~  ~  .  . 
+12 |  .  .  ~  .  ~  ~  ~  .  ~  .  .  .  ~  .  .  .  ~  .  . 
+13 |  .  .  ~  .  .  .  ~  .  ~  .  ~  .  ~  .  ~  .  ~  .  ~ 
+14 |  .  .  ~  .  ~  .  ~  .  ~  .  ~  .  .  .  .  .  ~  .  . 
+15 |  ~  .  ~  .  ~  .  .  .  ~  .  ~  .  ~  .  ~  ~  ~  .  . 
+16 |  .  .  ~  .  ~  .  ~  .  .  .  ~  .  ~  .  .  .  .  .  . 
+17 |  .  .  .  .  ~  .  ~  .  ~  .  ~  .  ~  .  ~  .  ~  .  . 
+18 |  .  .  ~  .  ~  .  .  .  ~  .  ~  .  ~  .  ~  .  ~  .  . 
+
+With pre-placed solution walls removed (full budget):
+  Reachable: 217, Score: 217, Reaches boundary: true
+
+Starting GA: 216 candidates, budget 11, population 200
+Gen 0: best score = -151
+Gen 1: NEW BEST = -124
+Gen 2: NEW BEST = -73
+Gen 9: NEW BEST = -67
+Gen 30: NEW BEST = -59
+Gen 33: NEW BEST = -58
+Gen 43: NEW BEST = -55
+Gen 51: NEW BEST = -48
+Gen 61: NEW BEST = -45
+Gen 65: NEW BEST = 5
+Gen 69: NEW BEST = 6
+Gen 1000: best = 6 (2284 gens/sec)
+Gen 2000: best = 6 (2279 gens/sec)
+Gen 2534: NEW BEST = 18
+Gen 2709: NEW BEST = 19
+Gen 2859: NEW BEST = 20
+Gen 2913: NEW BEST = 21
+Gen 3000: best = 21 (2280 gens/sec)
+Gen 3602: NEW BEST = 24
+Gen 3840: NEW BEST = 25
+Gen 4000: best = 25 (2315 gens/sec)
+Gen 5000: best = 25 (2324 gens/sec)
+Gen 6000: best = 25 (2326 gens/sec)
+Gen 7000: best = 25 (2325 gens/sec)
+Gen 8000: best = 25 (2331 gens/sec)
+Gen 8397: NEW BEST = 27
+Gen 9000: best = 27 (2340 gens/sec)
+Gen 10000: best = 27 (2346 gens/sec)
+Gen 11000: best = 27 (2353 gens/sec)
+Gen 12000: best = 27 (2357 gens/sec)
+Gen 13000: best = 27 (2358 gens/sec)
+Gen 14000: best = 27 (2356 gens/sec)
+Gen 15000: best = 27 (2352 gens/sec)
+Gen 16000: best = 27 (2356 gens/sec)
+Gen 17000: best = 27 (2359 gens/sec)
+Gen 18000: best = 27 (2364 gens/sec)
+Gen 19000: best = 27 (2369 gens/sec)
+Gen 20000: best = 27 (2370 gens/sec)
+Gen 21000: best = 27 (2371 gens/sec)
+Gen 22000: best = 27 (2367 gens/sec)
+Gen 23000: best = 27 (2368 gens/sec)
+Gen 24000: best = 27 (2372 gens/sec)
+Gen 25000: best = 27 (2371 gens/sec)
+Gen 26000: best = 27 (2370 gens/sec)
+Gen 27000: best = 27 (2373 gens/sec)
+Gen 28000: best = 27 (2371 gens/sec)
+Gen 29000: best = 27 (2369 gens/sec)
+Gen 30000: best = 27 (2367 gens/sec)
+Gen 31000: best = 27 (2368 gens/sec)
+Gen 32000: best = 27 (2368 gens/sec)
+Gen 33000: best = 27 (2370 gens/sec)
+Gen 34000: best = 27 (2369 gens/sec)
+Gen 34468: NEW BEST = 28
+Gen 35000: best = 28 (2368 gens/sec)
+Gen 36000: best = 28 (2367 gens/sec)
+Gen 37000: best = 28 (2367 gens/sec)
+Gen 37783: NEW BEST = 29
+Gen 38000: best = 29 (2367 gens/sec)
+Gen 39000: best = 29 (2366 gens/sec)
+Gen 40000: best = 29 (2367 gens/sec)
+Gen 41000: best = 29 (2369 gens/sec)
+Gen 42000: best = 29 (2369 gens/sec)
+Gen 43000: best = 29 (2371 gens/sec)
+Gen 44000: best = 29 (2372 gens/sec)
+Gen 45000: best = 29 (2373 gens/sec)
+Gen 46000: best = 29 (2374 gens/sec)
+Gen 47000: best = 29 (2374 gens/sec)
+Gen 48000: best = 29 (2374 gens/sec)
+Gen 49000: best = 29 (2372 gens/sec)
+Gen 50000: best = 29 (2371 gens/sec)
+Gen 51000: best = 29 (2371 gens/sec)
+Gen 52000: best = 29 (2370 gens/sec)
+Gen 53000: best = 29 (2370 gens/sec)
+Gen 54000: best = 29 (2370 gens/sec)
+Gen 55000: best = 29 (2368 gens/sec)
+Gen 56000: best = 29 (2366 gens/sec)
+Gen 56174: NEW BEST = 30
+Gen 57000: best = 30 (2363 gens/sec)
+Gen 58000: best = 30 (2360 gens/sec)
+Gen 59000: best = 30 (2358 gens/sec)
+Gen 60000: best = 30 (2357 gens/sec)
+Gen 61000: best = 30 (2355 gens/sec)
+Gen 62000: best = 30 (2354 gens/sec)
+Gen 63000: best = 30 (2355 gens/sec)
+Gen 64000: best = 30 (2355 gens/sec)
+Gen 65000: best = 30 (2356 gens/sec)
+Gen 66000: best = 30 (2357 gens/sec)
+Gen 67000: best = 30 (2357 gens/sec)
+Gen 68000: best = 30 (2357 gens/sec)
+Gen 69000: best = 30 (2358 gens/sec)
+Gen 70000: best = 30 (2358 gens/sec)
+Gen 71000: best = 30 (2360 gens/sec)
+Gen 72000: best = 30 (2361 gens/sec)
+Gen 73000: best = 30 (2362 gens/sec)
+Gen 74000: best = 30 (2362 gens/sec)
+Gen 75000: best = 30 (2363 gens/sec)
+Gen 76000: best = 30 (2362 gens/sec)
+Gen 77000: best = 30 (2362 gens/sec)
+Gen 78000: best = 30 (2363 gens/sec)
+Gen 79000: best = 30 (2362 gens/sec)
+Gen 80000: best = 30 (2362 gens/sec)
+Gen 81000: best = 30 (2363 gens/sec)
+Gen 82000: best = 30 (2363 gens/sec)
+Gen 83000: best = 30 (2363 gens/sec)
+Gen 84000: best = 30 (2364 gens/sec)
+Gen 85000: best = 30 (2363 gens/sec)
+Gen 86000: best = 30 (2363 gens/sec)
+Gen 87000: best = 30 (2364 gens/sec)
+Gen 88000: best = 30 (2364 gens/sec)
+Gen 89000: best = 30 (2363 gens/sec)
+Gen 90000: best = 30 (2362 gens/sec)
+Gen 91000: best = 30 (2362 gens/sec)
+Gen 92000: best = 30 (2362 gens/sec)
+Gen 93000: best = 30 (2361 gens/sec)
+Gen 94000: best = 30 (2362 gens/sec)
+Gen 95000: best = 30 (2361 gens/sec)
+Gen 96000: best = 30 (2360 gens/sec)
+Gen 97000: best = 30 (2360 gens/sec)
+Gen 98000: best = 30 (2360 gens/sec)
+Gen 99000: best = 30 (2360 gens/sec)
+Gen 100000: best = 30 (2359 gens/sec)
+
+GA complete. Best score = 30, valid = true
+
+=== TIMING ===
+  solve() total: 42.386s
+
+BFS Result:
+  Reachable Cells: 217
+  Reaches boundary: true
+
+  Score from BFS: 217
+
+  Candidate Wall Positions: 216
+
+Optimal score: 74
+  Gap from optimal: 44 points
+
+Final result:
+  Score: 30
+  Valid: true
+  Walls placed at:
+    (4, 11)
+    (5, 7)
+    (5, 12)
+    (6, 6)
+    (7, 5)
+    (7, 11)
+    (7, 14)
+    (8, 18)
+    (12, 9)
+    (15, 7)
+    (18, 0)
+Grid: 19 rows x 19 cols
+Horse at: (6, 9)
+Budget: 11
+
+ 0 |  .  .  ~  ~  .  .  .  ~  ~  ~  ~  .  .  .  .  .  .  ~  ~ 
+ 1 |  .  ~  ~  ~  ~  .  .  ~  ~  ~  .  .  .  .  ~  ~  ~  ~  ~ 
+ 2 |  ~  ~  ~  ~  ~  .  .  ~  ~  ~  ~  .  .  ~  ~  ~  ~  ~  . 
+ 3 |  ~  ~  ~  ~  ~  .  .  ~  ~  ~  ~  .  .  ~  ~  ~  ~  ~  . 
+ 4 |  ~  ~  ~  ~  ~  .  .  .  ~  ~  .  W  .  ~  ~  ~  ~  .  . 
+ 5 |  .  .  .  .  .  .  .  W  .  .  .  .  W  .  .  .  .  .  . 
+ 6 |  .  ~  .  .  .  .  W  .  .  H  .  ~  .  .  .  .  .  .  ~ 
+ 7 |  .  .  .  .  .  W  .  .  .  .  .  W  .  .  W  .  .  .  . 
+ 8 |  .  .  ~  .  ~  ~  ~  .  ~  .  ~  .  ~  .  ~  .  ~  .  W 
+ 9 |  .  .  .  .  ~  .  .  .  ~  .  ~  .  ~  .  ~  .  ~  .  . 
+10 |  .  .  ~  .  ~  .  ~  .  ~  .  ~  .  ~  .  ~  .  .  .  . 
+11 |  .  .  ~  .  ~  .  .  .  ~  .  ~  .  ~  .  ~  ~  ~  .  . 
+12 |  .  .  ~  .  ~  ~  ~  .  ~  W  .  .  ~  .  .  .  ~  .  . 
+13 |  .  .  ~  .  .  .  ~  .  ~  .  ~  .  ~  .  ~  .  ~  .  ~ 
+14 |  .  .  ~  .  ~  .  ~  .  ~  .  ~  .  .  .  .  .  ~  .  . 
+15 |  ~  .  ~  .  ~  .  .  W  ~  .  ~  .  ~  .  ~  ~  ~  .  . 
+16 |  .  .  ~  .  ~  .  ~  .  .  .  ~  .  ~  .  .  .  .  .  . 
+17 |  .  .  .  .  ~  .  ~  .  ~  .  ~  .  ~  .  ~  .  ~  .  . 
+18 |  W  .  ~  .  ~  .  .  .  ~  .  ~  .  ~  .  ~  .  ~  .  . 
+
+All your codebase are belong to us.

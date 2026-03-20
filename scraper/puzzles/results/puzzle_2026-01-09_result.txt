@@ -1,0 +1,336 @@
+With pre-placed solution walls:
+  Reachable: 107, Score: 107, Reaches boundary: true
+
+Grid: 21 rows x 21 cols
+Horse at: (10, 10)
+Budget: 13
+
+ 0 |  ~  ~  ~  ~  ~  ~  ~  ~  ~  .  .  .  ~  .  .  .  ~  ~  ~  ~  ~ 
+ 1 |  ~  ~  ~  ~  ~  ~  ~  ~  ~  .  .  .  .  .  .  .  .  ~  ~  ~  ~ 
+ 2 |  ~  ~  ~  ~  ~  ~  ~  ~  ~  .  .  .  .  .  .  .  .  .  ~  ~  ~ 
+ 3 |  ~  ~  ~  ~  ~  ~  ~  ~  .  .  .  .  .  ~  ~  ~  ~  .  .  ~  ~ 
+ 4 |  ~  ~  ~  ~  ~  ~  ~  .  .  .  .  .  ~  ~  ~  ~  ~  ~  .  .  ~ 
+ 5 |  ~  ~  ~  ~  .  .  .  .  .  .  .  .  ~  ~  ~  ~  ~  ~  .  .  . 
+ 6 |  .  .  .  .  .  .  .  .  .  .  .  .  ~  ~  ~  ~  ~  ~  .  .  . 
+ 7 |  .  .  .  .  .  .  .  .  .  .  .  .  ~  ~  ~  ~  ~  ~  .  .  . 
+ 8 |  .  .  .  .  ~  ~  ~  ~  .  .  .  .  .  ~  ~  ~  ~  .  .  .  ~ 
+ 9 |  .  .  .  ~  ~  ~  ~  ~  ~  .  .  .  .  .  .  .  .  .  .  .  ~ 
+10 |  ~  .  .  ~  ~  ~  ~  ~  ~  .  H  .  .  .  .  .  .  .  .  .  . 
+11 |  ~  .  .  ~  ~  ~  ~  ~  ~  .  .  .  .  .  .  .  .  .  .  .  . 
+12 |  ~  ~  .  ~  ~  ~  ~  ~  ~  .  .  .  .  .  .  .  .  .  .  .  . 
+13 |  ~  ~  .  .  ~  ~  ~  ~  .  .  .  .  .  .  .  .  ~  ~  ~  .  . 
+14 |  ~  ~  .  .  .  .  .  .  .  .  ~  ~  .  .  .  ~  ~  ~  ~  ~  . 
+15 |  ~  .  .  .  .  .  .  .  .  ~  ~  ~  ~  .  .  ~  ~  ~  ~  ~  . 
+16 |  ~  .  .  .  .  .  .  .  .  ~  ~  ~  ~  .  .  ~  ~  ~  ~  ~  . 
+17 |  .  .  .  ~  ~  ~  ~  ~  .  .  ~  ~  .  .  .  .  ~  ~  ~  .  . 
+18 |  .  .  ~  ~  ~  ~  ~  ~  ~  .  .  .  .  .  .  .  .  .  .  .  . 
+19 |  .  ~  ~  ~  ~  ~  ~  ~  ~  ~  .  .  .  .  .  ~  ~  ~  ~  .  . 
+20 |  .  ~  ~  ~  ~  ~  ~  ~  ~  ~  .  .  .  .  ~  ~  ~  ~  ~  ~  . 
+
+With pre-placed solution walls removed (full budget):
+  Reachable: 230, Score: 230, Reaches boundary: true
+
+Starting GA: 229 candidates, budget 13, population 200
+Gen 0: best score = -301
+Gen 9: NEW BEST = -278
+Gen 16: NEW BEST = -269
+Gen 24: NEW BEST = -216
+Gen 39: NEW BEST = -215
+Gen 40: NEW BEST = -212
+Gen 78: NEW BEST = -208
+Gen 98: NEW BEST = -204
+Gen 100: best score = -204
+Gen 147: NEW BEST = -199
+Gen 186: NEW BEST = -197
+Gen 187: NEW BEST = -196
+Gen 200: NEW BEST = -193
+Gen 200: best score = -193
+Gen 208: NEW BEST = -190
+Gen 220: NEW BEST = -189
+Gen 246: NEW BEST = -186
+Gen 250: NEW BEST = -180
+Gen 268: NEW BEST = -178
+Gen 300: best score = -178
+Gen 326: NEW BEST = -172
+Gen 400: best score = -172
+Gen 500: NEW BEST = -171
+Gen 500: best score = -171
+Gen 600: best score = -171
+Gen 626: NEW BEST = -170
+Gen 700: best score = -170
+Gen 704: NEW BEST = -169
+Gen 729: NEW BEST = -168
+Gen 769: NEW BEST = -167
+Gen 779: NEW BEST = -166
+Gen 800: best score = -166
+Gen 880: NEW BEST = -154
+Gen 893: NEW BEST = -153
+Gen 900: best score = -153
+Gen 927: NEW BEST = -152
+Gen 937: NEW BEST = -148
+Gen 993: NEW BEST = -146
+Gen 1000: best score = -146
+Gen 1100: best score = -146
+Gen 1162: NEW BEST = -144
+Gen 1200: best score = -144
+Gen 1300: best score = -144
+Gen 1370: NEW BEST = -140
+Gen 1400: best score = -140
+Gen 1500: best score = -140
+Gen 1600: best score = -140
+Gen 1686: NEW BEST = -136
+Gen 1700: NEW BEST = 26
+Gen 1700: best score = 26
+Gen 1707: NEW BEST = 27
+Gen 1800: best score = 27
+Gen 1900: best score = 27
+Gen 2000: best score = 27
+Gen 2100: best score = 27
+Gen 2164: NEW BEST = 28
+Gen 2200: best score = 28
+Gen 2300: best score = 28
+Gen 2400: best score = 28
+Gen 2500: best score = 28
+Gen 2600: best score = 28
+Gen 2700: best score = 28
+Gen 2800: best score = 28
+Gen 2900: best score = 28
+Gen 3000: best score = 28
+Gen 3092: NEW BEST = 30
+Gen 3100: best score = 30
+Gen 3200: best score = 30
+Gen 3216: NEW BEST = 32
+Gen 3300: best score = 32
+Gen 3400: best score = 32
+Gen 3500: best score = 32
+Gen 3600: best score = 32
+Gen 3700: best score = 32
+Gen 3800: best score = 32
+Gen 3900: best score = 32
+Gen 4000: best score = 32
+Gen 4100: best score = 32
+Gen 4200: best score = 32
+Gen 4300: best score = 32
+Gen 4400: best score = 32
+Gen 4500: best score = 32
+Gen 4600: best score = 32
+Gen 4700: best score = 32
+Gen 4800: best score = 32
+Gen 4900: best score = 32
+Gen 5000: best score = 32
+Gen 5100: best score = 32
+Gen 5130: NEW BEST = 36
+Gen 5200: best score = 36
+Gen 5242: NEW BEST = 37
+Gen 5300: best score = 37
+Gen 5400: best score = 37
+Gen 5500: best score = 37
+Gen 5600: best score = 37
+Gen 5700: best score = 37
+Gen 5800: best score = 37
+Gen 5900: best score = 37
+Gen 5985: NEW BEST = 38
+Gen 6000: best score = 38
+Gen 6100: best score = 38
+Gen 6200: best score = 38
+Gen 6300: best score = 38
+Gen 6400: best score = 38
+Gen 6500: best score = 38
+Gen 6600: best score = 38
+Gen 6683: NEW BEST = 42
+Gen 6700: best score = 42
+Gen 6800: best score = 42
+Gen 6900: best score = 42
+Gen 7000: best score = 42
+Gen 7002: NEW BEST = 43
+Gen 7100: best score = 43
+Gen 7200: best score = 43
+Gen 7300: best score = 43
+Gen 7400: best score = 43
+Gen 7500: best score = 43
+Gen 7600: best score = 43
+Gen 7700: best score = 43
+Gen 7800: best score = 43
+Gen 7900: best score = 43
+Gen 8000: best score = 43
+Gen 8100: best score = 43
+Gen 8200: best score = 43
+Gen 8300: best score = 43
+Gen 8400: best score = 43
+Gen 8500: best score = 43
+Gen 8600: best score = 43
+Gen 8700: best score = 43
+Gen 8800: best score = 43
+Gen 8900: best score = 43
+Gen 9000: best score = 43
+Gen 9100: best score = 43
+Gen 9200: best score = 43
+Gen 9300: best score = 43
+Gen 9400: best score = 43
+Gen 9500: best score = 43
+Gen 9600: best score = 43
+Gen 9628: NEW BEST = 44
+Gen 9700: best score = 44
+Gen 9800: best score = 44
+Gen 9900: best score = 44
+Gen 10000: best score = 44
+Gen 10100: best score = 44
+Gen 10200: best score = 44
+Gen 10300: best score = 44
+Gen 10400: best score = 44
+Gen 10500: best score = 44
+Gen 10600: best score = 44
+Gen 10700: best score = 44
+Gen 10800: best score = 44
+Gen 10900: best score = 44
+Gen 11000: best score = 44
+Gen 11100: best score = 44
+Gen 11200: best score = 44
+Gen 11300: best score = 44
+Gen 11400: best score = 44
+Gen 11500: best score = 44
+Gen 11600: best score = 44
+Gen 11700: best score = 44
+Gen 11800: best score = 44
+Gen 11900: best score = 44
+Gen 12000: best score = 44
+Gen 12100: best score = 44
+Gen 12200: best score = 44
+Gen 12300: best score = 44
+Gen 12400: best score = 44
+Gen 12500: best score = 44
+Gen 12600: best score = 44
+Gen 12700: best score = 44
+Gen 12800: best score = 44
+Gen 12900: best score = 44
+Gen 13000: best score = 44
+Gen 13100: best score = 44
+Gen 13200: best score = 44
+Gen 13300: best score = 44
+Gen 13400: best score = 44
+Gen 13500: best score = 44
+Gen 13600: best score = 44
+Gen 13700: best score = 44
+Gen 13800: best score = 44
+Gen 13900: best score = 44
+Gen 13935: NEW BEST = 45
+Gen 14000: best score = 45
+Gen 14100: best score = 45
+Gen 14200: best score = 45
+Gen 14300: best score = 45
+Gen 14400: best score = 45
+Gen 14500: best score = 45
+Gen 14585: NEW BEST = 46
+Gen 14600: best score = 46
+Gen 14700: best score = 46
+Gen 14800: best score = 46
+Gen 14900: best score = 46
+Gen 15000: best score = 46
+Gen 15100: best score = 46
+Gen 15200: best score = 46
+Gen 15300: best score = 46
+Gen 15400: best score = 46
+Gen 15500: best score = 46
+Gen 15600: best score = 46
+Gen 15700: best score = 46
+Gen 15800: best score = 46
+Gen 15900: best score = 46
+Gen 16000: best score = 46
+Gen 16100: best score = 46
+Gen 16200: best score = 46
+Gen 16300: best score = 46
+Gen 16400: best score = 46
+Gen 16500: best score = 46
+Gen 16511: NEW BEST = 47
+Gen 16600: best score = 47
+Gen 16700: best score = 47
+Gen 16800: best score = 47
+Gen 16900: best score = 47
+Gen 17000: best score = 47
+Gen 17100: best score = 47
+Gen 17200: best score = 47
+Gen 17300: best score = 47
+Gen 17400: best score = 47
+Gen 17500: best score = 47
+Gen 17600: best score = 47
+Gen 17700: best score = 47
+Gen 17800: best score = 47
+Gen 17900: best score = 47
+Gen 18000: best score = 47
+Gen 18100: best score = 47
+Gen 18200: best score = 47
+Gen 18300: best score = 47
+Gen 18400: best score = 47
+Gen 18500: best score = 47
+Gen 18600: best score = 47
+Gen 18700: best score = 47
+Gen 18800: best score = 47
+Gen 18900: best score = 47
+Gen 19000: best score = 47
+Gen 19100: best score = 47
+Gen 19200: best score = 47
+Gen 19300: best score = 47
+Gen 19400: best score = 47
+Gen 19500: best score = 47
+Gen 19600: best score = 47
+Gen 19700: best score = 47
+Gen 19800: best score = 47
+Gen 19900: best score = 47
+Gen 20000: best score = 47
+
+GA complete. Best score = 47, valid = true
+BFS Result:
+  Reachable Cells: 230
+  Reaches boundary: true
+
+  Score from BFS: 230
+
+  Candidate Wall Positions: 229
+
+Optimal score: 103
+  Gap from optimal: 56 points
+
+Final result:
+  Score: 47
+  Valid: true
+  Walls placed at:
+    (4, 18)
+    (7, 10)
+    (7, 11)
+    (8, 9)
+    (9, 0)
+    (9, 16)
+    (10, 17)
+    (11, 16)
+    (12, 15)
+    (14, 8)
+    (15, 8)
+    (17, 13)
+    (17, 14)
+Grid: 21 rows x 21 cols
+Horse at: (10, 10)
+Budget: 13
+
+ 0 |  ~  ~  ~  ~  ~  ~  ~  ~  ~  .  .  .  ~  .  .  .  ~  ~  ~  ~  ~ 
+ 1 |  ~  ~  ~  ~  ~  ~  ~  ~  ~  .  .  .  .  .  .  .  .  ~  ~  ~  ~ 
+ 2 |  ~  ~  ~  ~  ~  ~  ~  ~  ~  .  .  .  .  .  .  .  .  .  ~  ~  ~ 
+ 3 |  ~  ~  ~  ~  ~  ~  ~  ~  .  .  .  .  .  ~  ~  ~  ~  .  .  ~  ~ 
+ 4 |  ~  ~  ~  ~  ~  ~  ~  .  .  .  .  .  ~  ~  ~  ~  ~  ~  W  .  ~ 
+ 5 |  ~  ~  ~  ~  .  .  .  .  .  .  .  .  ~  ~  ~  ~  ~  ~  .  .  . 
+ 6 |  .  .  .  .  .  .  .  .  .  .  .  .  ~  ~  ~  ~  ~  ~  .  .  . 
+ 7 |  .  .  .  .  .  .  .  .  .  .  W  W  ~  ~  ~  ~  ~  ~  .  .  . 
+ 8 |  .  .  .  .  ~  ~  ~  ~  .  W  .  .  .  ~  ~  ~  ~  .  .  .  ~ 
+ 9 |  W  .  .  ~  ~  ~  ~  ~  ~  .  .  .  .  .  .  .  W  .  .  .  ~ 
+10 |  ~  .  .  ~  ~  ~  ~  ~  ~  .  H  .  .  .  .  .  .  W  .  .  . 
+11 |  ~  .  .  ~  ~  ~  ~  ~  ~  .  .  .  .  .  .  .  W  .  .  .  . 
+12 |  ~  ~  .  ~  ~  ~  ~  ~  ~  .  .  .  .  .  .  W  .  .  .  .  . 
+13 |  ~  ~  .  .  ~  ~  ~  ~  .  .  .  .  .  .  .  .  ~  ~  ~  .  . 
+14 |  ~  ~  .  .  .  .  .  .  W  .  ~  ~  .  .  .  ~  ~  ~  ~  ~  . 
+15 |  ~  .  .  .  .  .  .  .  W  ~  ~  ~  ~  .  .  ~  ~  ~  ~  ~  . 
+16 |  ~  .  .  .  .  .  .  .  .  ~  ~  ~  ~  .  .  ~  ~  ~  ~  ~  . 
+17 |  .  .  .  ~  ~  ~  ~  ~  .  .  ~  ~  .  W  W  .  ~  ~  ~  .  . 
+18 |  .  .  ~  ~  ~  ~  ~  ~  ~  .  .  .  .  .  .  .  .  .  .  .  . 
+19 |  .  ~  ~  ~  ~  ~  ~  ~  ~  ~  .  .  .  .  .  ~  ~  ~  ~  .  . 
+20 |  .  ~  ~  ~  ~  ~  ~  ~  ~  ~  .  .  .  .  ~  ~  ~  ~  ~  ~  . 
+
+All your codebase are belong to us.

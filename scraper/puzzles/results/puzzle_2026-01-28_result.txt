@@ -1,0 +1,291 @@
+With pre-placed solution walls:
+  Reachable: 33, Score: 33, Reaches boundary: true
+
+Grid: 15 rows x 15 cols
+Horse at: (9, 10)
+Budget: 10
+
+ 0 |  ~  ~  ~  ~  ~  .  ~  ~  ~  ~  .  ~  ~  ~  ~ 
+ 1 |  ~  ~  ~  .  .  .  .  .  ~ P1  .  .  ~  ~  ~ 
+ 2 |  ~  ~  .  .  .  .  .  . P1  ~  .  .  .  ~  ~ 
+ 3 |  ~  .  .  .  ~  ~  .  .  .  ~  .  ~  .  .  ~ 
+ 4 |  ~  .  .  .  ~  ~  .  .  .  ~  .  .  .  .  ~ 
+ 5 |  .  .  .  .  .  .  .  .  ~  .  ~  .  ~  .  . 
+ 6 |  ~  .  .  .  .  .  .  .  ~  .  .  .  .  .  ~ 
+ 7 |  .  .  .  ~  .  .  .  ~  .  .  .  .  ~  .  . 
+ 8 |  ~  .  .  .  .  .  ~  .  .  .  ~  .  .  .  ~ 
+ 9 |  .  .  .  .  .  .  ~  .  ~  .  H  .  ~  .  ~ 
+10 |  .  .  ~  .  .  ~  .  .  .  ~  ~  .  .  .  . 
+11 |  ~  .  .  .  .  ~  .  ~  .  ~  ~  .  .  .  ~ 
+12 |  ~  ~  .  .  .  ~ P2  .  .  .  .  .  .  ~  ~ 
+13 |  ~  ~  ~  .  . P2  ~  .  .  ~  .  .  ~  ~  ~ 
+14 |  ~  ~  ~  ~  .  ~  ~  ~  .  .  .  .  ~  ~  ~ 
+
+With pre-placed solution walls removed (full budget):
+  Reachable: 139, Score: 139, Reaches boundary: true
+
+Starting GA: 134 candidates, budget 10, population 200
+Gen 0: best score = 2
+Gen 100: best score = 2
+Gen 200: best score = 2
+Gen 300: best score = 2
+Gen 400: best score = 2
+Gen 483: NEW BEST = 9
+Gen 500: best score = 9
+Gen 600: best score = 9
+Gen 644: NEW BEST = 11
+Gen 700: best score = 11
+Gen 730: NEW BEST = 12
+Gen 800: best score = 12
+Gen 900: best score = 12
+Gen 1000: best score = 12
+Gen 1100: best score = 12
+Gen 1200: best score = 12
+Gen 1300: best score = 12
+Gen 1400: best score = 12
+Gen 1500: best score = 12
+Gen 1600: best score = 12
+Gen 1700: best score = 12
+Gen 1800: best score = 12
+Gen 1900: best score = 12
+Gen 2000: best score = 12
+Gen 2100: best score = 12
+Gen 2200: best score = 12
+Gen 2222: NEW BEST = 23
+Gen 2300: best score = 23
+Gen 2400: best score = 23
+Gen 2500: best score = 23
+Gen 2600: best score = 23
+Gen 2700: best score = 23
+Gen 2776: NEW BEST = 24
+Gen 2800: best score = 24
+Gen 2900: best score = 24
+Gen 3000: best score = 24
+Gen 3100: best score = 24
+Gen 3200: best score = 24
+Gen 3300: best score = 24
+Gen 3400: best score = 24
+Gen 3500: best score = 24
+Gen 3600: best score = 24
+Gen 3700: best score = 24
+Gen 3800: best score = 24
+Gen 3900: best score = 24
+Gen 4000: best score = 24
+Gen 4100: best score = 24
+Gen 4200: best score = 24
+Gen 4300: best score = 24
+Gen 4400: best score = 24
+Gen 4500: best score = 24
+Gen 4600: best score = 24
+Gen 4611: NEW BEST = 26
+Gen 4700: best score = 26
+Gen 4800: best score = 26
+Gen 4853: NEW BEST = 27
+Gen 4900: best score = 27
+Gen 5000: best score = 27
+Gen 5100: best score = 27
+Gen 5200: best score = 27
+Gen 5300: best score = 27
+Gen 5400: best score = 27
+Gen 5452: NEW BEST = 29
+Gen 5500: best score = 29
+Gen 5596: NEW BEST = 30
+Gen 5600: best score = 30
+Gen 5700: best score = 30
+Gen 5800: best score = 30
+Gen 5900: best score = 30
+Gen 6000: best score = 30
+Gen 6100: best score = 30
+Gen 6200: best score = 30
+Gen 6300: best score = 30
+Gen 6400: best score = 30
+Gen 6500: best score = 30
+Gen 6600: best score = 30
+Gen 6700: best score = 30
+Gen 6800: best score = 30
+Gen 6900: best score = 30
+Gen 7000: best score = 30
+Gen 7100: best score = 30
+Gen 7200: best score = 30
+Gen 7300: best score = 30
+Gen 7400: best score = 30
+Gen 7500: best score = 30
+Gen 7600: best score = 30
+Gen 7700: best score = 30
+Gen 7800: best score = 30
+Gen 7900: best score = 30
+Gen 8000: best score = 30
+Gen 8100: best score = 30
+Gen 8200: best score = 30
+Gen 8300: best score = 30
+Gen 8400: best score = 30
+Gen 8500: best score = 30
+Gen 8600: best score = 30
+Gen 8700: best score = 30
+Gen 8800: best score = 30
+Gen 8900: best score = 30
+Gen 9000: best score = 30
+Gen 9100: best score = 30
+Gen 9200: best score = 30
+Gen 9300: best score = 30
+Gen 9400: best score = 30
+Gen 9500: best score = 30
+Gen 9600: best score = 30
+Gen 9700: best score = 30
+Gen 9800: best score = 30
+Gen 9900: best score = 30
+Gen 10000: best score = 30
+Gen 10100: best score = 30
+Gen 10200: best score = 30
+Gen 10300: best score = 30
+Gen 10400: best score = 30
+Gen 10468: NEW BEST = 31
+Gen 10500: best score = 31
+Gen 10600: best score = 31
+Gen 10655: NEW BEST = 32
+Gen 10700: best score = 32
+Gen 10791: NEW BEST = 33
+Gen 10800: best score = 33
+Gen 10841: NEW BEST = 34
+Gen 10900: best score = 34
+Gen 11000: best score = 34
+Gen 11100: best score = 34
+Gen 11200: best score = 34
+Gen 11300: best score = 34
+Gen 11400: best score = 34
+Gen 11500: best score = 34
+Gen 11600: best score = 34
+Gen 11700: best score = 34
+Gen 11800: best score = 34
+Gen 11900: best score = 34
+Gen 12000: best score = 34
+Gen 12100: best score = 34
+Gen 12200: best score = 34
+Gen 12300: best score = 34
+Gen 12400: best score = 34
+Gen 12500: best score = 34
+Gen 12600: best score = 34
+Gen 12700: best score = 34
+Gen 12800: best score = 34
+Gen 12900: best score = 34
+Gen 13000: best score = 34
+Gen 13087: NEW BEST = 40
+Gen 13100: best score = 40
+Gen 13200: best score = 40
+Gen 13300: best score = 40
+Gen 13400: best score = 40
+Gen 13500: best score = 40
+Gen 13600: best score = 40
+Gen 13700: best score = 40
+Gen 13800: best score = 40
+Gen 13900: best score = 40
+Gen 14000: best score = 40
+Gen 14100: best score = 40
+Gen 14200: best score = 40
+Gen 14300: best score = 40
+Gen 14400: best score = 40
+Gen 14500: best score = 40
+Gen 14600: best score = 40
+Gen 14700: best score = 40
+Gen 14800: best score = 40
+Gen 14900: best score = 40
+Gen 15000: best score = 40
+Gen 15100: best score = 40
+Gen 15200: best score = 40
+Gen 15300: best score = 40
+Gen 15400: best score = 40
+Gen 15500: best score = 40
+Gen 15600: best score = 40
+Gen 15700: best score = 40
+Gen 15800: best score = 40
+Gen 15900: best score = 40
+Gen 16000: best score = 40
+Gen 16100: best score = 40
+Gen 16200: best score = 40
+Gen 16300: best score = 40
+Gen 16400: best score = 40
+Gen 16500: best score = 40
+Gen 16600: best score = 40
+Gen 16700: best score = 40
+Gen 16800: best score = 40
+Gen 16900: best score = 40
+Gen 17000: best score = 40
+Gen 17100: best score = 40
+Gen 17200: best score = 40
+Gen 17300: best score = 40
+Gen 17400: best score = 40
+Gen 17500: best score = 40
+Gen 17600: best score = 40
+Gen 17700: best score = 40
+Gen 17800: best score = 40
+Gen 17900: best score = 40
+Gen 18000: best score = 40
+Gen 18100: best score = 40
+Gen 18200: best score = 40
+Gen 18300: best score = 40
+Gen 18400: best score = 40
+Gen 18500: best score = 40
+Gen 18586: NEW BEST = 41
+Gen 18600: best score = 41
+Gen 18700: best score = 41
+Gen 18800: best score = 41
+Gen 18900: best score = 41
+Gen 19000: best score = 41
+Gen 19100: best score = 41
+Gen 19200: best score = 41
+Gen 19300: best score = 41
+Gen 19400: best score = 41
+Gen 19500: best score = 41
+Gen 19600: best score = 41
+Gen 19700: best score = 41
+Gen 19800: best score = 41
+Gen 19900: best score = 41
+Gen 20000: best score = 41
+
+GA complete. Best score = 41, valid = true
+BFS Result:
+  Reachable Cells: 139
+  Reaches boundary: true
+
+  Score from BFS: 139
+
+  Candidate Wall Positions: 134
+
+Optimal score: 63
+  Gap from optimal: 22 points
+
+Final result:
+  Score: 41
+  Valid: true
+  Walls placed at:
+    (1, 10)
+    (2, 4)
+    (3, 8)
+    (5, 0)
+    (5, 4)
+    (5, 14)
+    (7, 13)
+    (10, 7)
+    (10, 14)
+    (12, 11)
+Grid: 15 rows x 15 cols
+Horse at: (9, 10)
+Budget: 10
+
+ 0 |  ~  ~  ~  ~  ~  .  ~  ~  ~  ~  .  ~  ~  ~  ~ 
+ 1 |  ~  ~  ~  .  .  .  .  .  ~ P1  W  .  ~  ~  ~ 
+ 2 |  ~  ~  .  .  W  .  .  . P1  ~  .  .  .  ~  ~ 
+ 3 |  ~  .  .  .  ~  ~  .  .  W  ~  .  ~  .  .  ~ 
+ 4 |  ~  .  .  .  ~  ~  .  .  .  ~  .  .  .  .  ~ 
+ 5 |  W  .  .  .  W  .  .  .  ~  .  ~  .  ~  .  W 
+ 6 |  ~  .  .  .  .  .  .  .  ~  .  .  .  .  .  ~ 
+ 7 |  .  .  .  ~  .  .  .  ~  .  .  .  .  ~  W  . 
+ 8 |  ~  .  .  .  .  .  ~  .  .  .  ~  .  .  .  ~ 
+ 9 |  .  .  .  .  .  .  ~  .  ~  .  H  .  ~  .  ~ 
+10 |  .  .  ~  .  .  ~  .  W  .  ~  ~  .  .  .  W 
+11 |  ~  .  .  .  .  ~  .  ~  .  ~  ~  .  .  .  ~ 
+12 |  ~  ~  .  .  .  ~ P2  .  .  .  .  W  .  ~  ~ 
+13 |  ~  ~  ~  .  . P2  ~  .  .  ~  .  .  ~  ~  ~ 
+14 |  ~  ~  ~  ~  .  ~  ~  ~  .  .  .  .  ~  ~  ~ 
+
+All your codebase are belong to us.
