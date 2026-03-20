@@ -1,3 +1,57 @@
+// Author: Strydr Silverberg
+//
+// Problem Statement: Implement a solver for Enclose Horse. You are to be given inputs and are to create the best solution
+// you can while maximizing your score.
+//
+// Scoring
+// The score of a given horse enclosure is computed as the total score of all tiles the horse can reach.
+// 1. Empty grass tiles, the grass tile with the horse, and grass tiles with portals all score +1 point
+// 2. A grass tile with an apple scores +11 points (+1 for the grass tile, and +10 for the apple)
+// 3. A grass tile with bees scores −4 points (+1 for the grass tile, and −5 for the bees)
+// 4. A grass tile with cherries scores +4 points (+1 for the grass tile, and +3 for the cherries)
+//
+// Valid Enclosure
+// A valid enclosure must satisfy the following conditions:
+// 1. There is no path the horse can take from it’s present location to the perimeter using grass
+// tiles and portals.
+// 2. No wall has been placed on a tile containing water, an apple, bees, cherries, or a portal.
+//
+// Input Format
+// The first line of the input contains a single positive integer 𝑊 the wall budget.
+// The second line of the input file contains two space-separated, positive integers, 𝑅 and 𝐶, indicating
+// the number of rows and columns in the grid respectively.
+// The next 𝑅 lines each contain exactly 𝐶 characters. Each character must be one of the following
+// symbols:
+// • # — Water tile
+// • . — Empty grass tile
+// • H — Grass tile containing the horse
+// • W — Grass tile containing a pre placed wall1
+// • a — Grass tile with an apple
+// • b — Grass tile with bees
+// • c — Grass tile with cherries
+// • p — Grass tile with a portal
+// 
+// The next line contains a positive integer 𝑃 indicating the number of pairs of portals in the grid
+// above (there should be exactly 2𝑃 characters in the grid with the symbol P).
+// The next 𝑃 lines of input each contain four space-separated, positive integers, indicating the
+// locations of the paired portals. The 𝑖th line should contain integers 𝑟𝑖,1, 𝑐𝑖,1, 𝑟𝑖,2, and 𝑐𝑖,2 — the 0-
+// indexed row and column of the first portal and second portal respectively.
+//
+// An example input is shown below.
+// 5
+// 9 13
+// ##########..#
+// #...#...#...#
+// .WHW..a.#.p.#
+// #.W.#...#...#
+// #...#####.###
+// #...#.......#
+// #.p.#.b.#.c.#
+// #...#...#...#
+// #.#####...###
+// 1
+// 2 10 6 2
+
 const std = @import("std");
 
 const CellType = enum { 
@@ -8,7 +62,7 @@ const CellType = enum {
     cherry, // c, +3
     apple, // a, +10
     bee, //b, -5
-    portal, //
+    portal, //p
 };
 
 const Pos = struct {
