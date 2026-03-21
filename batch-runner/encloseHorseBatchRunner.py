@@ -33,15 +33,14 @@ from pathlib import Path
 
 def findPuzzles(puzzle_dir: Path) -> list[tuple[Path, Path]]:
     """Find all (txt, json) pairs sorted by date."""
-    txts = sorted(puzzle_dir.glob("puzzle_*.txt"))
+    txts = sorted(puzzle_dir.glob("*.txt"))
     pairs = []
     for txtPath in txts:
         jsonPath = txtPath.with_suffix(".json")
         if jsonPath.exists():
             pairs.append((txtPath, jsonPath))
         else:
-            print(f"WARNING: No metadata file for {txtPath.name}, skipping. "
-                  f"(Expected: {jsonPath.name})")
+            pairs.append((txtPath, None))
     return pairs
 
 
@@ -152,7 +151,10 @@ def main():
     totalPuzzles = 0
 
     for i, (txtPath, jsonPath) in enumerate(pairs, 1):
-        meta = json.loads(jsonPath.read_text())
+        if jsonPath is not None:
+            meta = json.loads(jsonPath.read_text())
+        else:
+            meta = {"date": txtPath.stem, "budget": "?"}
         puzzleDate = meta.get("date", txtPath.stem)
         budget = meta.get("budget", "?")
         name = meta.get("name", "")

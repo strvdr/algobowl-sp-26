@@ -174,6 +174,7 @@ const ThreadContext = struct {
     puzzle: *const Puzzle,
     candidates: []const Pos,
     seed: u64,
+    popSize: usize,
     result: ?SolveResult,
     allocator: std.mem.Allocator,
 
@@ -184,8 +185,7 @@ const ThreadContext = struct {
     fn doSolve(self: *ThreadContext) !SolveResult {
         var prng = std.Random.DefaultPrng.init(self.seed);
         const random = prng.random();
-
-        const best = try solve(self.puzzle, self.candidates, random, self.allocator);
+        const best = try solve(self.puzzle, self.candidates, random, self.popSize, self.allocator);
 
         return .{
             .walls = best.walls,
@@ -201,7 +201,7 @@ const ThreadContext = struct {
 
 const directions = [_][2]i8{ .{ -1, 0 }, .{ 1, 0 }, .{ 0, -1 }, .{ 0, 1 } };
 
-const populationSize: usize = 200;
+const populationSize: usize = 50;
 const gaGenerations: usize = 200_000;
 const validEliteCount: usize = 5;
 const invalidEliteCount: usize = 5;
@@ -447,7 +447,7 @@ fn portalPartner(pp: PortalPair, row: usize, col: usize) ?Pos {
 /// Compute a heuristic bonus for invalid individuals based on how well-connected
 /// their placed walls are to existing barriers. Encourages the GA to form
 /// contiguous barriers even before finding valid enclosures.
-fn computeAdjacencyBonus(candidates: []const Pos, walls: []const bool, puzzle: *const Puzzle) i32 {
+fn computeAdjacencyBonus(candidates: []const Pos, walls: []const bool, puzzle: *const Puzzle, isWallMap: []const bool) i32 {
     var bonus: i32 = 0;
 
     for (candidates, 0..) |pos, i| {
@@ -473,24 +473,38 @@ fn computeAdjacencyBonus(candidates: []const Pos, walls: []const bool, puzzle: *
                 continue;
             }
 
-            for (candidates, 0..) |other, j| {
-                if (j == i) continue;
-                if (walls[j] and other.row == nrow and other.col == ncol) {
-                    neighborCount += 1;
-                    break;
-                }
+            if (isWallMap[idx(puzzle.cols, nrow, ncol)]) {
+                neighborCount += 1;
             }
         }
 
         bonus += switch (neighborCount) {
-            0 => -3, // isolated wall
-            1 => 0, // weakly connected
-            2 => 3, // forming a line or corner
-            3 => 2, // well connected
-            else => -2, // surrounded
+            0 => -3,
+            1 => 0,
+            2 => 3,
+            3 => 2,
+            else => -2,
         };
     }
     return bonus;
+}
+
+/// Remove redundant walls from a valid individual, freeing budget for expansion.
+fn pruneWalls(individual: *Individual, candidates: []const Pos, puzzle: *const Puzzle, scratch: *BFSScratch) !void {
+    if (!individual.valid) return;
+
+    for (0..candidates.len) |i| {
+        if (!individual.walls[i]) continue;
+
+        individual.walls[i] = false;
+        const result = try bfs(puzzle, candidates, individual.walls, scratch, true);
+
+        if (!result.reachesBoundary and result.score >= individual.score) {
+            individual.score = result.score;
+        } else {
+            individual.walls[i] = true;
+        }
+    }
 }
 
 /// Evaluate an individual's fitness. Valid enclosures get the BFS score directly.
@@ -502,26 +516,19 @@ fn evaluateFitness(individual: *Individual, candidates: []const Pos, puzzle: *co
 
     if (result.reachesBoundary) {
         const reachable: i32 = @intCast(result.count);
-        const adjBonus = computeAdjacencyBonus(candidates, individual.walls, puzzle);
+        // Build isWall map for O(1) neighbor lookups
+        @memset(scratch.isWall, false);
+        for (candidates, 0..) |pos, ci| {
+            if (individual.walls[ci]) {
+                scratch.isWall[idx(puzzle.cols, pos.row, pos.col)] = true;
+            }
+        }
+        const adjBonus = computeAdjacencyBonus(candidates, individual.walls, puzzle, scratch.isWall);
         individual.score = -reachable * 4 + adjBonus;
         individual.valid = false;
     } else {
         individual.score = result.score;
         individual.valid = true;
-
-        // Prune wasted walls: remove any wall that doesn't affect validity or score
-        for (0..candidates.len) |i| {
-            if (!individual.walls[i]) continue;
-
-            individual.walls[i] = false;
-            const pruneResult = try bfs(puzzle, candidates, individual.walls, scratch, true);
-
-            if (!pruneResult.reachesBoundary and pruneResult.score >= individual.score) {
-                individual.score = pruneResult.score;
-            } else {
-                individual.walls[i] = true;
-            }
-        }
     }
 }
 
@@ -802,15 +809,15 @@ fn randomizeWalls(individual: *Individual, budget: u32, random: std.Random) void
 // =============================================================================
 
 /// Run the genetic algorithm to find the best wall placement.
-fn solve(puzzle: *const Puzzle, candidates: []const Pos, random: std.Random, allocator: std.mem.Allocator) !Individual {
+fn solve(puzzle: *const Puzzle, candidates: []const Pos, random: std.Random, popSize: usize, allocator: std.mem.Allocator) !Individual {
     var scratch = try BFSScratch.init(allocator, puzzle.rows * puzzle.cols);
     defer scratch.deinit();
 
     // Pre-allocate two population buffers and swap between them (no per-generation allocation)
     // more information found @ https://www.youtube.com/watch?v=aJCgtiN5K14
-    const popA = try allocPopulation(allocator, populationSize, candidates.len);
+    const popA = try allocPopulation(allocator, popSize, candidates.len);
     defer freePopulation(allocator, popA);
-    const popB = try allocPopulation(allocator, populationSize, candidates.len);
+    const popB = try allocPopulation(allocator, popSize, candidates.len);
     defer freePopulation(allocator, popB);
 
     var population = popA;
@@ -822,7 +829,7 @@ fn solve(puzzle: *const Puzzle, candidates: []const Pos, random: std.Random, all
         try evaluateFitness(individual, candidates, puzzle, &scratch);
     }
 
-    std.debug.print("Starting GA: {} candidates, budget {}, population {}\n", .{ candidates.len, puzzle.budget, populationSize });
+    std.debug.print("Starting GA: {} candidates, budget {}, population {}\n", .{ candidates.len, puzzle.budget, popSize });
 
     std.mem.sort(Individual, population, {}, Individual.compareDescending);
     std.debug.print("Gen 0: best score = {}\n", .{population[0].score});
@@ -853,7 +860,7 @@ fn solve(puzzle: *const Puzzle, candidates: []const Pos, random: std.Random, all
 
         // Fill remaining elite slots from top of sorted population
         var fillFrom: usize = 0;
-        while (eliteIdx < eliteCount and fillFrom < populationSize) {
+        while (eliteIdx < eliteCount and fillFrom < popSize) {
             @memcpy(next[eliteIdx].walls, population[fillFrom].walls);
             next[eliteIdx].score = population[fillFrom].score;
             next[eliteIdx].valid = population[fillFrom].valid;
@@ -862,7 +869,7 @@ fn solve(puzzle: *const Puzzle, candidates: []const Pos, random: std.Random, all
         }
 
         // Breed remaining population
-        for (eliteCount..populationSize) |i| {
+        for (eliteCount..popSize) |i| {
             const parent1 = tournamentSelect(population, random);
             const parent2 = tournamentSelect(population, random);
 
@@ -882,9 +889,11 @@ fn solve(puzzle: *const Puzzle, candidates: []const Pos, random: std.Random, all
 
         std.mem.sort(Individual, population, {}, Individual.compareDescending);
 
-        // Try to expand the top valid individuals
+
+        // Prune then expand the top valid individuals
         for (0..@min(populationSize, 10)) |ei| {
             if (population[ei].valid) {
+                try pruneWalls(&population[ei], candidates, puzzle, &scratch);
                 _ = try expandMutation(&population[ei], candidates, puzzle, &scratch, random);
             }
         }
@@ -904,7 +913,7 @@ fn solve(puzzle: *const Puzzle, candidates: []const Pos, random: std.Random, all
             std.debug.print("Gen {}: RESTART #{} (stagnant for {} gens)\n", .{ generation, restartCount, gensSinceImprovement });
 
             // Reinitialize everyone except elites
-            for (eliteCount..populationSize) |i| {
+            for (eliteCount..popSize) |i| {
                 randomizeWalls(&population[i], puzzle.budget, random);
                 try evaluateFitness(&population[i], candidates, puzzle, &scratch);
             }
@@ -994,11 +1003,14 @@ pub fn main() !void {
     defer allocator.free(threads);
 
     const baseSeed: u64 = 0xFACADE;
+    const popSizes = [_]usize{200, 200, 200, 200, 200, 200, 200, 200, 100, 100, 100, 100, 50, 50, 50, 50};
+
     for (0..numThreads) |i| {
         contexts[i] = .{
             .puzzle = &puzzle,
             .candidates = candidates,
             .seed = baseSeed +% i * 0x9E3779B97F4A7C15,
+            .popSize = popSizes[i % popSizes.len],
             .result = null,
             .allocator = allocator,
         };
@@ -1009,6 +1021,7 @@ pub fn main() !void {
     for (0..numThreads) |i| {
         threads[i] = try std.Thread.spawn(.{}, ThreadContext.run, .{&contexts[i]});
     }
+
     for (0..numThreads) |i| {
         threads[i].join();
     }

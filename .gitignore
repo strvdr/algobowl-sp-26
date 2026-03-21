@@ -23,3 +23,5 @@ zig-cache/
 Thumbs.db
 
 venv/
+./puzzles/results
+generate-adversarial-inputs/
