@@ -202,11 +202,13 @@ const ThreadContext = struct {
 const directions = [_][2]i8{ .{ -1, 0 }, .{ 1, 0 }, .{ 0, -1 }, .{ 0, 1 } };
 
 const populationSize: usize = 200;
-const gaGenerations: usize = 100_000;
+const gaGenerations: usize = 200_000;
 const validEliteCount: usize = 5;
 const invalidEliteCount: usize = 5;
 const eliteCount: usize = validEliteCount + invalidEliteCount;
 const mutationRate: u32 = 30;
+const stagnationThreshold: usize = 25_000;
+const maxRestarts: usize = 75;
 
 // =============================================================================
 // Parsing
@@ -805,6 +807,7 @@ fn solve(puzzle: *const Puzzle, candidates: []const Pos, random: std.Random, all
     defer scratch.deinit();
 
     // Pre-allocate two population buffers and swap between them (no per-generation allocation)
+    // more information found @ https://www.youtube.com/watch?v=aJCgtiN5K14
     const popA = try allocPopulation(allocator, populationSize, candidates.len);
     defer freePopulation(allocator, popA);
     const popB = try allocPopulation(allocator, populationSize, candidates.len);
@@ -826,6 +829,8 @@ fn solve(puzzle: *const Puzzle, candidates: []const Pos, random: std.Random, all
 
     var bestSoFar: i32 = population[0].score;
     var genTimer = try std.time.Timer.start();
+    var gensSinceImprovement: usize = 0;
+    var restartCount: usize = 0;
 
     for (1..gaGenerations + 1) |generation| {
         // Elitism: copy top valid and top invalid individuals
@@ -886,7 +891,25 @@ fn solve(puzzle: *const Puzzle, candidates: []const Pos, random: std.Random, all
 
         if (population[0].score > bestSoFar) {
             bestSoFar = population[0].score;
+            gensSinceImprovement = 0;
             std.debug.print("Gen {}: NEW BEST = {}\n", .{ generation, bestSoFar });
+        } else {
+            gensSinceImprovement += 1;
+        }
+
+        const restartCutoff: usize = gaGenerations * 3/4;
+        // Diversity injection on stagnation
+        if (gensSinceImprovement >= stagnationThreshold and restartCount < maxRestarts and generation < restartCutoff) {
+            restartCount += 1;
+            std.debug.print("Gen {}: RESTART #{} (stagnant for {} gens)\n", .{ generation, restartCount, gensSinceImprovement });
+
+            // Reinitialize everyone except elites
+            for (eliteCount..populationSize) |i| {
+                randomizeWalls(&population[i], puzzle.budget, random);
+                try evaluateFitness(&population[i], candidates, puzzle, &scratch);
+            }
+
+            gensSinceImprovement = 0;
         }
 
         if (generation % 1000 == 0) {
