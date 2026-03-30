@@ -195,6 +195,15 @@ const ThreadContext = struct {
     }
 };
 
+/// Indices of top-k valid and top-k invalid individuals, found via O(n) scan.
+const TopKResult = struct {
+    validIndices: [validEliteCount]usize = undefined,
+    validCount: usize = 0,
+    invalidIndices: [invalidEliteCount]usize = undefined,
+    invalidCount: usize = 0,
+    bestIdx: usize = 0,
+};
+
 // =============================================================================
 // Constants
 // =============================================================================
@@ -804,6 +813,62 @@ fn randomizeWalls(individual: *Individual, budget: u32, random: std.Random) void
     }
 }
 
+/// O(n) scan to find the top-k valid and top-k invalid individuals.
+/// Maintains two small insertion-sorted arrays (size ≤ 5 each), so this is
+/// effectively O(n) with a small constant factor.
+fn findTopK(population: []const Individual) TopKResult {
+    var result = TopKResult{};
+    var bestScore: i32 = std.math.minInt(i32);
+    var bestValid = false;
+
+    for (population, 0..) |ind, i| {
+        // Track overall best (valid preferred, then highest score)
+        const dominated = (bestValid and !ind.valid);
+        const dominated2 = (bestValid == ind.valid and ind.score <= bestScore);
+        if (!dominated and !dominated2) {
+            bestScore = ind.score;
+            bestValid = ind.valid;
+            result.bestIdx = i;
+        }
+
+        if (ind.valid) {
+            insertTopK(&result.validIndices, &result.validCount, validEliteCount, i, ind.score, population);
+        } else {
+            insertTopK(&result.invalidIndices, &result.invalidCount, invalidEliteCount, i, ind.score, population);
+        }
+    }
+
+    return result;
+}
+
+/// Insert index i into a small sorted (descending by score) array if it qualifies.
+fn insertTopK(
+    indices: []usize,
+    count: *usize,
+    comptime capacity: usize,
+    i: usize,
+    score: i32,
+    population: []const Individual,
+) void {
+    // Find insertion position (keep descending order)
+    var pos: usize = 0;
+    while (pos < count.*) : (pos += 1) {
+        if (score > population[indices[pos]].score) break;
+    }
+
+    if (pos >= capacity) return; // Doesn't qualify
+
+    // Shift elements right to make room
+    const shiftEnd = @min(count.*, capacity - 1);
+    var j: usize = shiftEnd;
+    while (j > pos) : (j -= 1) {
+        indices[j] = indices[j - 1];
+    }
+    indices[pos] = i;
+
+    if (count.* < capacity) count.* += 1;
+}
+
 // =============================================================================
 // Genetic Algorithm - Main Loop
 // =============================================================================
@@ -840,32 +905,26 @@ fn solve(puzzle: *const Puzzle, candidates: []const Pos, random: std.Random, pop
     var restartCount: usize = 0;
 
     for (1..gaGenerations + 1) |generation| {
-        // Elitism: copy top valid and top invalid individuals
+        //copy top-k valid and top-k invalid via O(n) scan from previous gen
+        const prevTopK = findTopK(population);
         var eliteIdx: usize = 0;
-        var validCopied: usize = 0;
-        var invalidCopied: usize = 0;
 
-        for (population) |*ind| {
-            if (eliteIdx >= eliteCount) break;
-            const keep = (ind.valid and validCopied < validEliteCount) or
-                (!ind.valid and invalidCopied < invalidEliteCount);
-            if (keep) {
-                @memcpy(next[eliteIdx].walls, ind.walls);
-                next[eliteIdx].score = ind.score;
-                next[eliteIdx].valid = ind.valid;
-                if (ind.valid) validCopied += 1 else invalidCopied += 1;
-                eliteIdx += 1;
-            }
+        // Copy top valid elites
+        for (0..prevTopK.validCount) |vi| {
+            const si = prevTopK.validIndices[vi];
+            @memcpy(next[eliteIdx].walls, population[si].walls);
+            next[eliteIdx].score = population[si].score;
+            next[eliteIdx].valid = population[si].valid;
+            eliteIdx += 1;
         }
 
-        // Fill remaining elite slots from top of sorted population
-        var fillFrom: usize = 0;
-        while (eliteIdx < eliteCount and fillFrom < popSize) {
-            @memcpy(next[eliteIdx].walls, population[fillFrom].walls);
-            next[eliteIdx].score = population[fillFrom].score;
-            next[eliteIdx].valid = population[fillFrom].valid;
+        // Copy top invalid elites
+        for (0..prevTopK.invalidCount) |ii| {
+            const si = prevTopK.invalidIndices[ii];
+            @memcpy(next[eliteIdx].walls, population[si].walls);
+            next[eliteIdx].score = population[si].score;
+            next[eliteIdx].valid = population[si].valid;
             eliteIdx += 1;
-            fillFrom += 1;
         }
 
         // Breed remaining population
@@ -887,19 +946,20 @@ fn solve(puzzle: *const Puzzle, candidates: []const Pos, random: std.Random, pop
         population = next;
         next = tmp;
 
-        std.mem.sort(Individual, population, {}, Individual.compareDescending);
+        const topK = findTopK(population);
 
-
-        // Prune then expand the top valid individuals
-        for (0..@min(populationSize, 10)) |ei| {
-            if (population[ei].valid) {
+        // Prune+expand: run periodically, or immediately when we find a new best
+        const doPruneExpand = (generation % 100 == 0) or (population[topK.bestIdx].score > bestSoFar);
+        if (doPruneExpand) {
+            for (0..topK.validCount) |vi| {
+                const ei = topK.validIndices[vi];
                 try pruneWalls(&population[ei], candidates, puzzle, &scratch);
                 _ = try expandMutation(&population[ei], candidates, puzzle, &scratch, random);
             }
         }
 
-        if (population[0].score > bestSoFar) {
-            bestSoFar = population[0].score;
+        if (population[topK.bestIdx].score > bestSoFar) {
+            bestSoFar = population[topK.bestIdx].score;
             gensSinceImprovement = 0;
             std.debug.print("Gen {}: NEW BEST = {}\n", .{ generation, bestSoFar });
         } else {
@@ -928,16 +988,19 @@ fn solve(puzzle: *const Puzzle, candidates: []const Pos, random: std.Random, pop
         }
     }
 
-    std.debug.print("\nGA complete. Best score = {}, valid = {}\n", .{ population[0].score, population[0].valid });
+    const finalTopK = findTopK(population);
+    const finalBest = finalTopK.bestIdx;
+
+    std.debug.print("\nGA complete. Best score = {}, valid = {}\n", .{ population[finalBest].score, population[finalBest].valid });
 
     // Return a copy of the best individual (caller owns the walls slice)
     const bestWalls = try allocator.alloc(bool, candidates.len);
-    @memcpy(bestWalls, population[0].walls);
+    @memcpy(bestWalls, population[finalBest].walls);
 
     return .{
         .walls = bestWalls,
-        .score = population[0].score,
-        .valid = population[0].valid,
+        .score = population[finalBest].score,
+        .valid = population[finalBest].valid,
         .allocator = allocator,
     };
 }
