@@ -1,3 +1,5 @@
+# [Algobowl Todo](https://mines.algobowl.org/)
+
 # Rubric: [Link](https://github.com/jackrosenthal/algobowl/blob/main/docs/rules.md)
 
 - Valid Input Submission: 5 points
