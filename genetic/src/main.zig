@@ -211,7 +211,7 @@ const TopKResult = struct {
 const directions = [_][2]i8{ .{ -1, 0 }, .{ 1, 0 }, .{ 0, -1 }, .{ 0, 1 } };
 
 const populationSize: usize = 50;
-const gaGenerations: usize = 200_000;
+const gaGenerations: usize = 500_000;
 const validEliteCount: usize = 5;
 const invalidEliteCount: usize = 5;
 const eliteCount: usize = validEliteCount + invalidEliteCount;
