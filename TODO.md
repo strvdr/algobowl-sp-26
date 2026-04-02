@@ -10,17 +10,21 @@
 - Verification: 20 points
 - Valid Submission: 50 Points
 
-# Input Upload: Monday, Apr 6, 10pm
+# Todo:
 
-## Valid Input Submission: 5 Points
+- Add BFS to first pass
+  - genetic to seed off of that
+- 
+
+## Input Upload: Monday, Apr 6, 10pm
 
 All teams design one input and upload it to the AlgoBOWL website. The input format will automatically be verified by the website software.
 Teams without a valid input uploaded at this time will receive 0 out of 15 possible points for input upload. However, they will receive an automatically-generated random input enabling them to continue participating in the rest of the competition.
 
--
--
+- Base input is in `input/base.txt`
+- Complex input is in `input/input.txt`
 
-# Output Upload: Thursday, Apr 9, 10pm
+## Output Upload: Thursday, Apr 9, 10pm
 
 Inputs from each team become available for every team to download. Each team downloads the inputs from all other teams and produces an output for each input. The output must be uploaded to the AlgoBOWL website by the due date.
 
