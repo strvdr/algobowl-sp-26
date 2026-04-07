@@ -694,21 +694,37 @@ fn findBoundaryWalls(individual: *const Individual, candidates: []const Pos, puz
         var hasBlockedNeighbor = false;
 
         // Up
-        if (pos.row == 0) { hasBlockedNeighbor = true; }
-        else if (scratch.visited[ci - cols] == stamp) { hasReachableNeighbor = true; }
-        else { hasBlockedNeighbor = true; }
+        if (pos.row == 0) {
+            hasBlockedNeighbor = true;
+        } else if (scratch.visited[ci - cols] == stamp) {
+            hasReachableNeighbor = true;
+        } else {
+            hasBlockedNeighbor = true;
+        }
         // Down
-        if (pos.row + 1 >= puzzle.rows) { hasBlockedNeighbor = true; }
-        else if (scratch.visited[ci + cols] == stamp) { hasReachableNeighbor = true; }
-        else { hasBlockedNeighbor = true; }
+        if (pos.row + 1 >= puzzle.rows) {
+            hasBlockedNeighbor = true;
+        } else if (scratch.visited[ci + cols] == stamp) {
+            hasReachableNeighbor = true;
+        } else {
+            hasBlockedNeighbor = true;
+        }
         // Left
-        if (pos.col == 0) { hasBlockedNeighbor = true; }
-        else if (scratch.visited[ci - 1] == stamp) { hasReachableNeighbor = true; }
-        else { hasBlockedNeighbor = true; }
+        if (pos.col == 0) {
+            hasBlockedNeighbor = true;
+        } else if (scratch.visited[ci - 1] == stamp) {
+            hasReachableNeighbor = true;
+        } else {
+            hasBlockedNeighbor = true;
+        }
         // Right
-        if (pos.col + 1 >= puzzle.cols) { hasBlockedNeighbor = true; }
-        else if (scratch.visited[ci + 1] == stamp) { hasReachableNeighbor = true; }
-        else { hasBlockedNeighbor = true; }
+        if (pos.col + 1 >= puzzle.cols) {
+            hasBlockedNeighbor = true;
+        } else if (scratch.visited[ci + 1] == stamp) {
+            hasReachableNeighbor = true;
+        } else {
+            hasBlockedNeighbor = true;
+        }
 
         if (hasReachableNeighbor and hasBlockedNeighbor) {
             scratch.boundaryBuf[count] = i;
@@ -765,21 +781,29 @@ fn expandMutation(individual: *Individual, candidates: []const Pos, puzzle: *con
         } else {
             // Up
             const ct_u = puzzle.grid[cellIdx - cols].type;
-            if (ct_u == .water or ct_u == .wall or scratch.visited[cellIdx - cols] != leakStamp) { onEdge = true; }
+            if (ct_u == .water or ct_u == .wall or scratch.visited[cellIdx - cols] != leakStamp) {
+                onEdge = true;
+            }
             // Down
             if (!onEdge) {
                 const ct_d = puzzle.grid[cellIdx + cols].type;
-                if (ct_d == .water or ct_d == .wall or scratch.visited[cellIdx + cols] != leakStamp) { onEdge = true; }
+                if (ct_d == .water or ct_d == .wall or scratch.visited[cellIdx + cols] != leakStamp) {
+                    onEdge = true;
+                }
             }
             // Left
             if (!onEdge) {
                 const ct_l = puzzle.grid[cellIdx - 1].type;
-                if (ct_l == .water or ct_l == .wall or scratch.visited[cellIdx - 1] != leakStamp) { onEdge = true; }
+                if (ct_l == .water or ct_l == .wall or scratch.visited[cellIdx - 1] != leakStamp) {
+                    onEdge = true;
+                }
             }
             // Right
             if (!onEdge) {
                 const ct_r = puzzle.grid[cellIdx + 1].type;
-                if (ct_r == .water or ct_r == .wall or scratch.visited[cellIdx + 1] != leakStamp) { onEdge = true; }
+                if (ct_r == .water or ct_r == .wall or scratch.visited[cellIdx + 1] != leakStamp) {
+                    onEdge = true;
+                }
             }
         }
 
@@ -980,7 +1004,9 @@ fn solve(puzzle: *const Puzzle, candidates: []const Pos, random: std.Random, pop
         // Slot 0: exact pre-placed solution, then fill any remaining budget randomly
         @memcpy(population[0].walls, sw);
         population[0].wallCount = 0;
-        for (sw) |w| { if (w) population[0].wallCount += 1; }
+        for (sw) |w| {
+            if (w) population[0].wallCount += 1;
+        }
         population[0].rebuildIsWallMap(candidates, puzzle.cols);
         // Pre-placed walls may use fewer than the full budget — fill the rest randomly
         while (population[0].wallCount < puzzle.budget) {
@@ -1083,9 +1109,7 @@ fn solve(puzzle: *const Puzzle, candidates: []const Pos, random: std.Random, pop
         // Prune+expand: pruneWalls frees budget so expandMutation can seal leaks.
         // Frequency scales with grid size — large grids can't afford it every 100 gens
         // but need it periodically or expandMutation has no budget to work with.
-        const pruneFreq: usize = if (gridSize > 5000) 2000
-                                 else if (gridSize > 2000) 500
-                                 else 100;
+        const pruneFreq: usize = if (gridSize > 5000) 2000 else if (gridSize > 2000) 500 else 100;
         const doPruneExpand = (population[topK.bestIdx].score > bestSoFar) or (generation % pruneFreq == 0);
         if (doPruneExpand) {
             for (0..topK.validCount) |vi| {
@@ -1215,17 +1239,12 @@ pub fn main() !void {
     // Scale population down for large grids: each BFS is O(gridSize) so fewer, faster individuals
     // beats more, slower ones. Target ~50 individuals for 100x100, up to 200 for small grids.
     const gridCells = puzzle.rows * puzzle.cols;
-    const scaledPop: usize = if (gridCells > 5000) 30
-                             else if (gridCells > 2000) 50
-                             else if (gridCells > 500) 100
-                             else 200;
+    const scaledPop: usize = if (gridCells > 5000) 30 else if (gridCells > 2000) 50 else if (gridCells > 500) 100 else 200;
     const popSizes = [_]usize{
-        scaledPop, scaledPop, scaledPop, scaledPop,
-        scaledPop, scaledPop, scaledPop, scaledPop,
-        @max(10, scaledPop / 2), @max(10, scaledPop / 2),
-        @max(10, scaledPop / 2), @max(10, scaledPop / 2),
-        @max(10, scaledPop / 4), @max(10, scaledPop / 4),
-        @max(10, scaledPop / 4), @max(10, scaledPop / 4),
+        scaledPop,               scaledPop,               scaledPop,               scaledPop,
+        scaledPop,               scaledPop,               scaledPop,               scaledPop,
+        @max(10, scaledPop / 2), @max(10, scaledPop / 2), @max(10, scaledPop / 2), @max(10, scaledPop / 2),
+        @max(10, scaledPop / 4), @max(10, scaledPop / 4), @max(10, scaledPop / 4), @max(10, scaledPop / 4),
     };
 
     for (0..numThreads) |i| {
@@ -1300,12 +1319,12 @@ pub fn main() !void {
     for (0..puzzle.rows) |row| {
         for (0..puzzle.cols) |col| {
             const ch: u8 = switch (puzzle.grid[row * puzzle.cols + col].type) {
-                .water  => '#',
-                .grass  => '.',
-                .wall   => 'W',
-                .horse  => 'H',
-                .apple  => 'a',
-                .bee    => 'b',
+                .water => '#',
+                .grass => '.',
+                .wall => 'W',
+                .horse => 'H',
+                .apple => 'a',
+                .bee => 'b',
                 .cherry => 'c',
                 .portal => 'p',
             };
