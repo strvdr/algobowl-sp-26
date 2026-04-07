@@ -173,47 +173,6 @@ const Puzzle = struct {
         self.allocator.free(self.scoreMap);
         self.allocator.free(self.portals);
     }
-
-    /// Pretty-print the grid to stderr for debugging.
-    pub fn display(self: *const Puzzle) void {
-        std.debug.print("Grid: {} rows x {} cols\n", .{ self.rows, self.cols });
-        std.debug.print("Horse at: ({}, {})\n", .{ self.horseRow, self.horseCol });
-        std.debug.print("Budget: {}\n\n", .{self.budget});
-
-        for (0..self.rows) |rowIndex| {
-            std.debug.print("{d:2} | ", .{rowIndex});
-            for (0..self.cols) |colIndex| {
-                const cell = self.grid[rowIndex * self.cols + colIndex];
-                switch (cell.type) {
-                    .horse => std.debug.print(" H ", .{}),
-                    .water => std.debug.print(" ~ ", .{}),
-                    .grass => std.debug.print(" . ", .{}),
-                    .cherry => std.debug.print(" * ", .{}),
-                    .bee => std.debug.print(" ! ", .{}),
-                    .apple => std.debug.print(" a ", .{}),
-                    .wall => std.debug.print(" W ", .{}),
-                    .portal => {
-                        var label: ?usize = null;
-                        for (self.portals, 0..) |pp, index| {
-                            if ((rowIndex == pp.r1 and colIndex == pp.c1) or
-                                (rowIndex == pp.r2 and colIndex == pp.c2))
-                            {
-                                label = index + 1;
-                                break;
-                            }
-                        }
-                        if (label) |l| {
-                            std.debug.print("P{d} ", .{l});
-                        } else {
-                            std.debug.print(" p ", .{});
-                        }
-                    },
-                }
-            }
-            std.debug.print("\n", .{});
-        }
-        std.debug.print("\n", .{});
-    }
 };
 
 /// Per-thread context for parallel GA solving.
@@ -379,31 +338,6 @@ fn destructiveMutation(
 
     // Re-evaluate after mutation
     evaluateFitness(individual, candidates, puzzle, scratch);
-}
-
-/// Try to read the optimal score from a companion .json file alongside the input.
-fn readOptimalScore(allocator: std.mem.Allocator, inputPath: []const u8) ?i32 {
-    if (!std.mem.endsWith(u8, inputPath, ".txt")) return null;
-
-    const basePath = inputPath[0 .. inputPath.len - 4];
-    const jsonPath = std.fmt.allocPrint(allocator, "{s}.json", .{basePath}) catch return null;
-    defer allocator.free(jsonPath);
-
-    const content = std.fs.cwd().readFileAlloc(allocator, jsonPath, 1024 * 1024) catch return null;
-    defer allocator.free(content);
-
-    const key = "\"optimal_score\":";
-    const keyPos = std.mem.indexOf(u8, content, key) orelse return null;
-    const afterKey = content[keyPos + key.len ..];
-
-    var i: usize = 0;
-    while (i < afterKey.len and (afterKey[i] == ' ' or afterKey[i] == '"')) : (i += 1) {}
-
-    var end: usize = i;
-    while (end < afterKey.len and (afterKey[end] >= '0' and afterKey[end] <= '9')) : (end += 1) {}
-
-    if (end == i) return null;
-    return std.fmt.parseInt(i32, afterKey[i..end], 10) catch null;
 }
 
 // =============================================================================
@@ -760,37 +694,21 @@ fn findBoundaryWalls(individual: *const Individual, candidates: []const Pos, puz
         var hasBlockedNeighbor = false;
 
         // Up
-        if (pos.row == 0) {
-            hasBlockedNeighbor = true;
-        } else if (scratch.visited[ci - cols] == stamp) {
-            hasReachableNeighbor = true;
-        } else {
-            hasBlockedNeighbor = true;
-        }
+        if (pos.row == 0) { hasBlockedNeighbor = true; }
+        else if (scratch.visited[ci - cols] == stamp) { hasReachableNeighbor = true; }
+        else { hasBlockedNeighbor = true; }
         // Down
-        if (pos.row + 1 >= puzzle.rows) {
-            hasBlockedNeighbor = true;
-        } else if (scratch.visited[ci + cols] == stamp) {
-            hasReachableNeighbor = true;
-        } else {
-            hasBlockedNeighbor = true;
-        }
+        if (pos.row + 1 >= puzzle.rows) { hasBlockedNeighbor = true; }
+        else if (scratch.visited[ci + cols] == stamp) { hasReachableNeighbor = true; }
+        else { hasBlockedNeighbor = true; }
         // Left
-        if (pos.col == 0) {
-            hasBlockedNeighbor = true;
-        } else if (scratch.visited[ci - 1] == stamp) {
-            hasReachableNeighbor = true;
-        } else {
-            hasBlockedNeighbor = true;
-        }
+        if (pos.col == 0) { hasBlockedNeighbor = true; }
+        else if (scratch.visited[ci - 1] == stamp) { hasReachableNeighbor = true; }
+        else { hasBlockedNeighbor = true; }
         // Right
-        if (pos.col + 1 >= puzzle.cols) {
-            hasBlockedNeighbor = true;
-        } else if (scratch.visited[ci + 1] == stamp) {
-            hasReachableNeighbor = true;
-        } else {
-            hasBlockedNeighbor = true;
-        }
+        if (pos.col + 1 >= puzzle.cols) { hasBlockedNeighbor = true; }
+        else if (scratch.visited[ci + 1] == stamp) { hasReachableNeighbor = true; }
+        else { hasBlockedNeighbor = true; }
 
         if (hasReachableNeighbor and hasBlockedNeighbor) {
             scratch.boundaryBuf[count] = i;
@@ -847,29 +765,21 @@ fn expandMutation(individual: *Individual, candidates: []const Pos, puzzle: *con
         } else {
             // Up
             const ct_u = puzzle.grid[cellIdx - cols].type;
-            if (ct_u == .water or ct_u == .wall or scratch.visited[cellIdx - cols] != leakStamp) {
-                onEdge = true;
-            }
+            if (ct_u == .water or ct_u == .wall or scratch.visited[cellIdx - cols] != leakStamp) { onEdge = true; }
             // Down
             if (!onEdge) {
                 const ct_d = puzzle.grid[cellIdx + cols].type;
-                if (ct_d == .water or ct_d == .wall or scratch.visited[cellIdx + cols] != leakStamp) {
-                    onEdge = true;
-                }
+                if (ct_d == .water or ct_d == .wall or scratch.visited[cellIdx + cols] != leakStamp) { onEdge = true; }
             }
             // Left
             if (!onEdge) {
                 const ct_l = puzzle.grid[cellIdx - 1].type;
-                if (ct_l == .water or ct_l == .wall or scratch.visited[cellIdx - 1] != leakStamp) {
-                    onEdge = true;
-                }
+                if (ct_l == .water or ct_l == .wall or scratch.visited[cellIdx - 1] != leakStamp) { onEdge = true; }
             }
             // Right
             if (!onEdge) {
                 const ct_r = puzzle.grid[cellIdx + 1].type;
-                if (ct_r == .water or ct_r == .wall or scratch.visited[cellIdx + 1] != leakStamp) {
-                    onEdge = true;
-                }
+                if (ct_r == .water or ct_r == .wall or scratch.visited[cellIdx + 1] != leakStamp) { onEdge = true; }
             }
         }
 
@@ -1070,9 +980,7 @@ fn solve(puzzle: *const Puzzle, candidates: []const Pos, random: std.Random, pop
         // Slot 0: exact pre-placed solution, then fill any remaining budget randomly
         @memcpy(population[0].walls, sw);
         population[0].wallCount = 0;
-        for (sw) |w| {
-            if (w) population[0].wallCount += 1;
-        }
+        for (sw) |w| { if (w) population[0].wallCount += 1; }
         population[0].rebuildIsWallMap(candidates, puzzle.cols);
         // Pre-placed walls may use fewer than the full budget — fill the rest randomly
         while (population[0].wallCount < puzzle.budget) {
@@ -1093,14 +1001,12 @@ fn solve(puzzle: *const Puzzle, candidates: []const Pos, random: std.Random, pop
         }
 
         startIdx = @min(2, popSize);
-        std.debug.print("Seeded {} individual(s) from pre-placed walls (score={})\n", .{ startIdx, population[0].score });
     }
 
     for (population[startIdx..]) |*individual| {
         randomizeWalls(individual, candidates, puzzle.cols, puzzle.budget, random);
         evaluateFitness(individual, candidates, puzzle, &scratch);
     }
-
 
     std.mem.sort(Individual, population, {}, Individual.compareDescending);
 
@@ -1177,7 +1083,9 @@ fn solve(puzzle: *const Puzzle, candidates: []const Pos, random: std.Random, pop
         // Prune+expand: pruneWalls frees budget so expandMutation can seal leaks.
         // Frequency scales with grid size — large grids can't afford it every 100 gens
         // but need it periodically or expandMutation has no budget to work with.
-        const pruneFreq: usize = if (gridSize > 5000) 2000 else if (gridSize > 2000) 500 else 100;
+        const pruneFreq: usize = if (gridSize > 5000) 2000
+                                 else if (gridSize > 2000) 500
+                                 else 100;
         const doPruneExpand = (population[topK.bestIdx].score > bestSoFar) or (generation % pruneFreq == 0);
         if (doPruneExpand) {
             for (0..topK.validCount) |vi| {
@@ -1208,7 +1116,6 @@ fn solve(puzzle: *const Puzzle, candidates: []const Pos, random: std.Random, pop
 
             gensSinceImprovement = 0;
         }
-
     }
 
     const finalTopK = findTopK(population);
@@ -1243,8 +1150,7 @@ pub fn main() !void {
     defer std.process.argsFree(allocator, args);
 
     if (args.len < 2) {
-        std.debug.print("Usage: algobowl <input_file>\n", .{});
-        return;
+        return error.MissingArgument;
     }
 
     const content = try std.fs.cwd().readFileAlloc(allocator, args[1], 1024 * 1024);
@@ -1270,13 +1176,14 @@ pub fn main() !void {
     removePrePlacedWalls(&puzzle);
 
     // Compute full reachability with no walls
+    const fullReach = bfs(&puzzle, null, &scratch, false);
     const fullReachStamp = scratch.currentStamp;
+    _ = fullReach;
 
     const candidates = try getCandidateWalls(&puzzle, scratch.visited, fullReachStamp, allocator);
     defer allocator.free(candidates);
 
     // Build candidates-indexed seedWalls from the pre-captured positions.
-    // Build a flat grid→candidate index lookup for O(1) mapping.
     const seedWalls = try allocator.alloc(bool, candidates.len);
     defer allocator.free(seedWalls);
     @memset(seedWalls, false);
@@ -1287,12 +1194,10 @@ pub fn main() !void {
         for (candidates, 0..) |pos, ci| {
             gridToCand[pos.row * puzzle.cols + pos.col] = ci;
         }
-        var wallCount: usize = 0;
         for (prePlacedWallPositions.items) |pos| {
             const ci = gridToCand[pos.row * puzzle.cols + pos.col];
             if (ci != std.math.maxInt(usize)) {
                 seedWalls[ci] = true;
-                wallCount += 1;
             }
         }
     }
@@ -1310,12 +1215,17 @@ pub fn main() !void {
     // Scale population down for large grids: each BFS is O(gridSize) so fewer, faster individuals
     // beats more, slower ones. Target ~50 individuals for 100x100, up to 200 for small grids.
     const gridCells = puzzle.rows * puzzle.cols;
-    const scaledPop: usize = if (gridCells > 5000) 30 else if (gridCells > 2000) 50 else if (gridCells > 500) 100 else 200;
+    const scaledPop: usize = if (gridCells > 5000) 30
+                             else if (gridCells > 2000) 50
+                             else if (gridCells > 500) 100
+                             else 200;
     const popSizes = [_]usize{
-        scaledPop,               scaledPop,               scaledPop,               scaledPop,
-        scaledPop,               scaledPop,               scaledPop,               scaledPop,
-        @max(10, scaledPop / 2), @max(10, scaledPop / 2), @max(10, scaledPop / 2), @max(10, scaledPop / 2),
-        @max(10, scaledPop / 4), @max(10, scaledPop / 4), @max(10, scaledPop / 4), @max(10, scaledPop / 4),
+        scaledPop, scaledPop, scaledPop, scaledPop,
+        scaledPop, scaledPop, scaledPop, scaledPop,
+        @max(10, scaledPop / 2), @max(10, scaledPop / 2),
+        @max(10, scaledPop / 2), @max(10, scaledPop / 2),
+        @max(10, scaledPop / 4), @max(10, scaledPop / 4),
+        @max(10, scaledPop / 4), @max(10, scaledPop / 4),
     };
 
     for (0..numThreads) |i| {
@@ -1325,7 +1235,7 @@ pub fn main() !void {
         contexts[i] = .{
             .puzzle = &puzzle,
             .candidates = candidates,
-            .seed = baseSeed +% i * 0x9E3779B97F4A7C15,
+            .seed = baseSeed +% (i *% @as(usize, 0x9E3779B97F4A7C15)),
             .popSize = popSizes[i % popSizes.len],
             .seedWalls = threadSeed,
             .result = null,
@@ -1366,7 +1276,7 @@ pub fn main() !void {
     }
 
     if (bestIdx == null) {
-        return;
+        return error.NoResult;
     }
 
     const best = contexts[bestIdx.?].result.?;
@@ -1379,8 +1289,6 @@ pub fn main() !void {
         }
     }
 
-    //puzzle.display();
-
     // Write the required output format to stdout:
     //   Line 1: score
     //   Next R lines: the grid
@@ -1392,12 +1300,12 @@ pub fn main() !void {
     for (0..puzzle.rows) |row| {
         for (0..puzzle.cols) |col| {
             const ch: u8 = switch (puzzle.grid[row * puzzle.cols + col].type) {
-                .water => '#',
-                .grass => '.',
-                .wall => 'W',
-                .horse => 'H',
-                .apple => 'a',
-                .bee => 'b',
+                .water  => '#',
+                .grass  => '.',
+                .wall   => 'W',
+                .horse  => 'H',
+                .apple  => 'a',
+                .bee    => 'b',
                 .cherry => 'c',
                 .portal => 'p',
             };
