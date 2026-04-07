@@ -63,7 +63,7 @@ const BFSResult = struct {
 const BFSScratch = struct {
     queue: []Pos,
     visited: []bool,
-    isWall: []bool,
+    /// Reused buffer for findBoundaryWalls results (indices into candidates).
     boundaryBuf: []usize,
     allocator: std.mem.Allocator,
 
@@ -71,7 +71,6 @@ const BFSScratch = struct {
         return .{
             .queue = try allocator.alloc(Pos, maxCells),
             .visited = try allocator.alloc(bool, maxCells),
-            .isWall = try allocator.alloc(bool, maxCells),
             .boundaryBuf = try allocator.alloc(usize, maxCells),
             .allocator = allocator,
         };
@@ -80,19 +79,43 @@ const BFSScratch = struct {
     pub fn deinit(self: *BFSScratch) void {
         self.allocator.free(self.queue);
         self.allocator.free(self.visited);
-        self.allocator.free(self.isWall);
         self.allocator.free(self.boundaryBuf);
     }
 };
 
 const Individual = struct {
     walls: []bool,
+    /// Flat grid-indexed wall map kept in sync with walls[].
+    /// isWallMap[row*cols+col] = true iff a wall from this individual is placed there.
+    /// Maintained by all mutation/crossover helpers so BFS never has to rebuild it.
+    isWallMap: []bool,
     score: i32,
     valid: bool,
+    /// Cached count of placed walls — avoids O(n) scans in mutate().
+    wallCount: u32,
     allocator: std.mem.Allocator,
 
     pub fn deinit(self: *Individual) void {
         self.allocator.free(self.walls);
+        self.allocator.free(self.isWallMap);
+    }
+
+    /// Place a wall at candidate index i (pos must be provided for isWallMap update).
+    pub inline fn placeWall(self: *Individual, i: usize, pos: Pos, cols: usize) void {
+        if (!self.walls[i]) {
+            self.walls[i] = true;
+            self.isWallMap[pos.row * cols + pos.col] = true;
+            self.wallCount += 1;
+        }
+    }
+
+    /// Remove a wall at candidate index i.
+    pub inline fn removeWall(self: *Individual, i: usize, pos: Pos, cols: usize) void {
+        if (self.walls[i]) {
+            self.walls[i] = false;
+            self.isWallMap[pos.row * cols + pos.col] = false;
+            self.wallCount -= 1;
+        }
     }
 
     /// Sort ordering: valid individuals first (descending score), then invalid (descending score).
@@ -111,7 +134,10 @@ const SolveResult = struct {
 };
 
 const Puzzle = struct {
-    grid: [][]Cell,
+    /// Flat row-major grid: grid[row*cols + col]
+    grid: []Cell,
+    /// Precomputed per-cell score lookup: scoreMap[row*cols+col] = cell.type.score()
+    scoreMap: []i32,
     rows: usize,
     cols: usize,
     budget: u32,
@@ -121,10 +147,8 @@ const Puzzle = struct {
     allocator: std.mem.Allocator,
 
     pub fn deinit(self: *Puzzle) void {
-        for (self.grid) |row| {
-            self.allocator.free(row);
-        }
         self.allocator.free(self.grid);
+        self.allocator.free(self.scoreMap);
         self.allocator.free(self.portals);
     }
 
@@ -134,9 +158,10 @@ const Puzzle = struct {
         std.debug.print("Horse at: ({}, {})\n", .{ self.horseRow, self.horseCol });
         std.debug.print("Budget: {}\n\n", .{self.budget});
 
-        for (self.grid, 0..) |row, rowIndex| {
+        for (0..self.rows) |rowIndex| {
             std.debug.print("{d:2} | ", .{rowIndex});
-            for (row, 0..) |cell, colIndex| {
+            for (0..self.cols) |colIndex| {
+                const cell = self.grid[rowIndex * self.cols + colIndex];
                 switch (cell.type) {
                     .horse => std.debug.print(" H ", .{}),
                     .water => std.debug.print(" ~ ", .{}),
@@ -185,13 +210,7 @@ const ThreadContext = struct {
     fn doSolve(self: *ThreadContext) !SolveResult {
         var prng = std.Random.DefaultPrng.init(self.seed);
         const random = prng.random();
-        const best = try solve(self.puzzle, self.candidates, random, self.popSize, self.allocator);
-
-        return .{
-            .walls = best.walls,
-            .score = best.score,
-            .valid = best.valid,
-        };
+        return solve(self.puzzle, self.candidates, random, self.popSize, self.allocator);
     }
 };
 
@@ -207,8 +226,6 @@ const TopKResult = struct {
 // =============================================================================
 // Constants
 // =============================================================================
-
-const directions = [_][2]i8{ .{ -1, 0 }, .{ 1, 0 }, .{ 0, -1 }, .{ 0, 1 } };
 
 const populationSize: usize = 50;
 const gaGenerations: usize = 500_000;
@@ -248,16 +265,19 @@ fn parseInput(allocator: std.mem.Allocator, data: []const u8) !Puzzle {
     const rows = try std.fmt.parseInt(usize, dims.next() orelse return error.InvalidInput, 10);
     const cols = try std.fmt.parseInt(usize, dims.next() orelse return error.InvalidInput, 10);
 
-    const grid = try allocator.alloc([]Cell, rows);
+    // Flat row-major grid allocation
+    const grid = try allocator.alloc(Cell, rows * cols);
+    const scoreMap = try allocator.alloc(i32, rows * cols);
 
     var horseRow: usize = 0;
     var horseCol: usize = 0;
 
-    for (grid, 0..) |*row, rowIndex| {
+    for (0..rows) |rowIndex| {
         const line = std.mem.trim(u8, lines.next() orelse return error.InvalidInput, " \r");
-        row.* = try allocator.alloc(Cell, cols);
         for (line, 0..) |ch, colIndex| {
-            row.*[colIndex] = try parseCell(ch);
+            const cell = try parseCell(ch);
+            grid[rowIndex * cols + colIndex] = cell;
+            scoreMap[rowIndex * cols + colIndex] = cell.type.score();
             if (ch == 'H') {
                 horseRow = rowIndex;
                 horseCol = colIndex;
@@ -282,6 +302,7 @@ fn parseInput(allocator: std.mem.Allocator, data: []const u8) !Puzzle {
 
     return .{
         .grid = grid,
+        .scoreMap = scoreMap,
         .rows = rows,
         .cols = cols,
         .budget = budget,
@@ -298,12 +319,14 @@ fn destructiveMutation(
     puzzle: *const Puzzle,
     scratch: *BFSScratch,
     random: std.Random,
-) !void {
+) void {
+    const cols = puzzle.cols;
+
     // Pick a random center in candidate space
     const centerIdx = random.intRangeLessThan(usize, 0, candidates.len);
     const center = candidates[centerIdx];
 
-    // Radius in grid space (tune this)
+    // Radius in grid space
     const radius: i32 = @intCast(random.intRangeLessThan(u32, 8, 25));
 
     // --- REMOVE walls in region ---
@@ -315,28 +338,21 @@ fn destructiveMutation(
 
         if (dr * dr + dc * dc <= radius * radius) {
             if (random.float(f32) < 0.6) {
-                individual.walls[i] = false;
+                individual.removeWall(i, pos, cols);
             }
         }
     }
 
-    // --- COUNT current walls ---
-    var count: u32 = 0;
-    for (individual.walls) |w| {
-        if (w) count += 1;
-    }
-
-    // --- REGROW walls randomly to fill budget ---
-    while (count < puzzle.budget) {
+    // --- REGROW walls randomly to fill budget (rejection sampling) ---
+    while (individual.wallCount < puzzle.budget) {
         const i = random.intRangeLessThan(usize, 0, candidates.len);
         if (!individual.walls[i]) {
-            individual.walls[i] = true;
-            count += 1;
+            individual.placeWall(i, candidates[i], cols);
         }
     }
 
     // Re-evaluate after mutation
-    try evaluateFitness(individual, candidates, puzzle, scratch);
+    evaluateFitness(individual, candidates, puzzle, scratch);
 }
 
 /// Try to read the optimal score from a companion .json file alongside the input.
@@ -368,16 +384,13 @@ fn readOptimalScore(allocator: std.mem.Allocator, inputPath: []const u8) ?i32 {
 // Grid Helpers
 // =============================================================================
 
-/// Flatten 2D (row, col) into a 1D index.
-fn idx(cols: usize, row: usize, col: usize) usize {
-    return row * cols + col;
-}
-
 fn removePrePlacedWalls(puzzle: *Puzzle) void {
     for (0..puzzle.rows) |row| {
         for (0..puzzle.cols) |col| {
-            if (puzzle.grid[row][col].type == .wall) {
-                puzzle.grid[row][col] = .{ .type = .grass };
+            const i = row * puzzle.cols + col;
+            if (puzzle.grid[i].type == .wall) {
+                puzzle.grid[i] = .{ .type = .grass };
+                puzzle.scoreMap[i] = CellType.grass.score();
             }
         }
     }
@@ -390,9 +403,10 @@ fn getCandidateWalls(puzzle: *const Puzzle, visited: []bool, allocator: std.mem.
 
     for (0..puzzle.rows) |row| {
         for (0..puzzle.cols) |col| {
-            if (!visited[idx(puzzle.cols, row, col)]) continue;
+            const i = row * puzzle.cols + col;
+            if (!visited[i]) continue;
             if (row == puzzle.horseRow and col == puzzle.horseCol) continue;
-            if (puzzle.grid[row][col].type != .grass) continue;
+            if (puzzle.grid[i].type != .grass) continue;
 
             try candidates.append(allocator, .{ .row = row, .col = col });
         }
@@ -408,24 +422,16 @@ fn getCandidateWalls(puzzle: *const Puzzle, visited: []bool, allocator: std.mem.
 /// BFS from the horse position using pre-allocated scratch buffers.
 /// Computes reachability, score, and whether the boundary is reachable.
 /// When `earlyExit` is true, stops as soon as the boundary is reached.
-fn bfs(puzzle: *const Puzzle, candidates: ?[]const Pos, walls: ?[]const bool, scratch: *BFSScratch, earlyExit: bool) !BFSResult {
+/// `isWallMap` must be a flat grid-indexed bool array (e.g. Individual.isWallMap).
+/// Pass `null` for isWallMap when no extra walls are placed.
+fn bfs(puzzle: *const Puzzle, isWallMap: ?[]const bool, scratch: *BFSScratch, earlyExit: bool) BFSResult {
     var head: usize = 0;
     var tail: usize = 0;
 
     @memset(scratch.visited, false);
-    @memset(scratch.isWall, false);
 
-    if (candidates) |cands| {
-        if (walls) |w| {
-            for (cands, 0..) |pos, i| {
-                if (w[i]) {
-                    scratch.isWall[idx(puzzle.cols, pos.row, pos.col)] = true;
-                }
-            }
-        }
-    }
-
-    scratch.visited[idx(puzzle.cols, puzzle.horseRow, puzzle.horseCol)] = true;
+    const startIdx = puzzle.horseRow * puzzle.cols + puzzle.horseCol;
+    scratch.visited[startIdx] = true;
     scratch.queue[tail] = .{ .row = puzzle.horseRow, .col = puzzle.horseCol };
     tail += 1;
 
@@ -433,47 +439,80 @@ fn bfs(puzzle: *const Puzzle, candidates: ?[]const Pos, walls: ?[]const bool, sc
     var reachesBoundary = false;
     var totalScore: i32 = 0;
 
+    const rows = puzzle.rows;
+    const cols = puzzle.cols;
+
     while (head < tail) {
         const current = scratch.queue[head];
         head += 1;
         reachable += 1;
 
-        totalScore += puzzle.grid[current.row][current.col].type.score();
+        const ci = current.row * cols + current.col;
+        totalScore += puzzle.scoreMap[ci];
 
-        if (current.row == 0 or current.row == puzzle.rows - 1 or
-            current.col == 0 or current.col == puzzle.cols - 1)
+        if (current.row == 0 or current.row == rows - 1 or
+            current.col == 0 or current.col == cols - 1)
         {
             reachesBoundary = true;
             if (earlyExit) break;
         }
 
-        // Explore cardinal neighbors
-        for (directions) |dir| {
-            const newRow = @as(i64, @intCast(current.row)) + dir[0];
-            const newCol = @as(i64, @intCast(current.col)) + dir[1];
-
-            if (newRow < 0 or newRow >= puzzle.rows or newCol < 0 or newCol >= puzzle.cols) continue;
-
-            const nr: usize = @intCast(newRow);
-            const nc: usize = @intCast(newCol);
-            const ni = idx(puzzle.cols, nr, nc);
-
-            if (scratch.visited[ni]) continue;
-
-            const cellType = puzzle.grid[nr][nc].type;
-            if (cellType == .water or cellType == .wall or scratch.isWall[ni]) continue;
-
-            scratch.visited[ni] = true;
-            scratch.queue[tail] = .{ .row = nr, .col = nc };
-            tail += 1;
+        // Unrolled cardinal neighbor expansion (avoids loop overhead + i8 casts)
+        // Up
+        if (current.row > 0) {
+            const ni = ci - cols;
+            if (!scratch.visited[ni]) {
+                const ct = puzzle.grid[ni].type;
+                if (ct != .water and ct != .wall and (isWallMap == null or !isWallMap.?[ni])) {
+                    scratch.visited[ni] = true;
+                    scratch.queue[tail] = .{ .row = current.row - 1, .col = current.col };
+                    tail += 1;
+                }
+            }
+        }
+        // Down
+        if (current.row + 1 < rows) {
+            const ni = ci + cols;
+            if (!scratch.visited[ni]) {
+                const ct = puzzle.grid[ni].type;
+                if (ct != .water and ct != .wall and (isWallMap == null or !isWallMap.?[ni])) {
+                    scratch.visited[ni] = true;
+                    scratch.queue[tail] = .{ .row = current.row + 1, .col = current.col };
+                    tail += 1;
+                }
+            }
+        }
+        // Left
+        if (current.col > 0) {
+            const ni = ci - 1;
+            if (!scratch.visited[ni]) {
+                const ct = puzzle.grid[ni].type;
+                if (ct != .water and ct != .wall and (isWallMap == null or !isWallMap.?[ni])) {
+                    scratch.visited[ni] = true;
+                    scratch.queue[tail] = .{ .row = current.row, .col = current.col - 1 };
+                    tail += 1;
+                }
+            }
+        }
+        // Right
+        if (current.col + 1 < cols) {
+            const ni = ci + 1;
+            if (!scratch.visited[ni]) {
+                const ct = puzzle.grid[ni].type;
+                if (ct != .water and ct != .wall and (isWallMap == null or !isWallMap.?[ni])) {
+                    scratch.visited[ni] = true;
+                    scratch.queue[tail] = .{ .row = current.row, .col = current.col + 1 };
+                    tail += 1;
+                }
+            }
         }
 
         // Traverse portals
-        if (puzzle.grid[current.row][current.col].type == .portal) {
+        if (puzzle.grid[ci].type == .portal) {
             for (puzzle.portals) |pp| {
                 const partner = portalPartner(pp, current.row, current.col) orelse continue;
-                const pi = idx(puzzle.cols, partner.row, partner.col);
-                if (!scratch.visited[pi] and !scratch.isWall[pi]) {
+                const pi = partner.row * cols + partner.col;
+                if (!scratch.visited[pi] and (isWallMap == null or !isWallMap.?[pi])) {
                     scratch.visited[pi] = true;
                     scratch.queue[tail] = partner;
                     tail += 1;
@@ -505,33 +544,46 @@ fn portalPartner(pp: PortalPair, row: usize, col: usize) ?Pos {
 /// contiguous barriers even before finding valid enclosures.
 fn computeAdjacencyBonus(candidates: []const Pos, walls: []const bool, puzzle: *const Puzzle, isWallMap: []const bool) i32 {
     var bonus: i32 = 0;
+    const rows = puzzle.rows;
+    const cols = puzzle.cols;
 
     for (candidates, 0..) |pos, i| {
         if (!walls[i]) continue;
 
         var neighborCount: i32 = 0;
+        const ci = pos.row * cols + pos.col;
 
-        for (directions) |dir| {
-            const nr = @as(i64, @intCast(pos.row)) + dir[0];
-            const nc = @as(i64, @intCast(pos.col)) + dir[1];
-
-            if (nr < 0 or nr >= puzzle.rows or nc < 0 or nc >= puzzle.cols) {
-                neighborCount += 1;
-                continue;
-            }
-
-            const nrow: usize = @intCast(nr);
-            const ncol: usize = @intCast(nc);
-            const cellType = puzzle.grid[nrow][ncol].type;
-
-            if (cellType == .water or cellType == .wall) {
-                neighborCount += 1;
-                continue;
-            }
-
-            if (isWallMap[idx(puzzle.cols, nrow, ncol)]) {
-                neighborCount += 1;
-            }
+        // Up
+        if (pos.row == 0) {
+            neighborCount += 1;
+        } else {
+            const ni = ci - cols;
+            const ct = puzzle.grid[ni].type;
+            if (ct == .water or ct == .wall or isWallMap[ni]) neighborCount += 1;
+        }
+        // Down
+        if (pos.row + 1 >= rows) {
+            neighborCount += 1;
+        } else {
+            const ni = ci + cols;
+            const ct = puzzle.grid[ni].type;
+            if (ct == .water or ct == .wall or isWallMap[ni]) neighborCount += 1;
+        }
+        // Left
+        if (pos.col == 0) {
+            neighborCount += 1;
+        } else {
+            const ni = ci - 1;
+            const ct = puzzle.grid[ni].type;
+            if (ct == .water or ct == .wall or isWallMap[ni]) neighborCount += 1;
+        }
+        // Right
+        if (pos.col + 1 >= cols) {
+            neighborCount += 1;
+        } else {
+            const ni = ci + 1;
+            const ct = puzzle.grid[ni].type;
+            if (ct == .water or ct == .wall or isWallMap[ni]) neighborCount += 1;
         }
 
         bonus += switch (neighborCount) {
@@ -546,19 +598,20 @@ fn computeAdjacencyBonus(candidates: []const Pos, walls: []const bool, puzzle: *
 }
 
 /// Remove redundant walls from a valid individual, freeing budget for expansion.
-fn pruneWalls(individual: *Individual, candidates: []const Pos, puzzle: *const Puzzle, scratch: *BFSScratch) !void {
+fn pruneWalls(individual: *Individual, candidates: []const Pos, puzzle: *const Puzzle, scratch: *BFSScratch) void {
     if (!individual.valid) return;
 
     for (0..candidates.len) |i| {
         if (!individual.walls[i]) continue;
 
-        individual.walls[i] = false;
-        const result = try bfs(puzzle, candidates, individual.walls, scratch, true);
+        individual.removeWall(i, candidates[i], puzzle.cols);
+        const result = bfs(puzzle, individual.isWallMap, scratch, true);
 
         if (!result.reachesBoundary and result.score >= individual.score) {
             individual.score = result.score;
+            // wall stays removed — budget freed for expansion
         } else {
-            individual.walls[i] = true;
+            individual.placeWall(i, candidates[i], puzzle.cols);
         }
     }
 }
@@ -566,20 +619,13 @@ fn pruneWalls(individual: *Individual, candidates: []const Pos, puzzle: *const P
 /// Evaluate an individual's fitness. Valid enclosures get the BFS score directly.
 /// Invalid enclosures get a negative penalty proportional to reachable cells,
 /// offset by the adjacency bonus heuristic.
-/// For valid individuals, also prunes walls that don't affect validity or score.
-fn evaluateFitness(individual: *Individual, candidates: []const Pos, puzzle: *const Puzzle, scratch: *BFSScratch) !void {
-    const result = try bfs(puzzle, candidates, individual.walls, scratch, true);
+fn evaluateFitness(individual: *Individual, candidates: []const Pos, puzzle: *const Puzzle, scratch: *BFSScratch) void {
+    const result = bfs(puzzle, individual.isWallMap, scratch, true);
 
     if (result.reachesBoundary) {
         const reachable: i32 = @intCast(result.count);
-        // Build isWall map for O(1) neighbor lookups
-        @memset(scratch.isWall, false);
-        for (candidates, 0..) |pos, ci| {
-            if (individual.walls[ci]) {
-                scratch.isWall[idx(puzzle.cols, pos.row, pos.col)] = true;
-            }
-        }
-        const adjBonus = computeAdjacencyBonus(candidates, individual.walls, puzzle, scratch.isWall);
+        // isWallMap is already up-to-date on individual — pass directly, no rebuild
+        const adjBonus = computeAdjacencyBonus(candidates, individual.walls, puzzle, individual.isWallMap);
         individual.score = -reachable * 4 + adjBonus;
         individual.valid = false;
     } else {
@@ -595,25 +641,29 @@ fn tournamentSelect(population: []Individual, random: std.Random) *const Individ
 }
 
 /// Perform crossover into a pre-allocated child buffer (no allocation needed).
-fn crossoverInto(child: *Individual, parent1: *const Individual, parent2: *const Individual, budget: u32) void {
+/// Maintains child.isWallMap and child.wallCount in sync with child.walls.
+fn crossoverInto(child: *Individual, parent1: *const Individual, parent2: *const Individual, candidates: []const Pos, cols: usize, budget: u32) void {
     @memset(child.walls, false);
-    var count: u32 = 0;
+    @memset(child.isWallMap, false);
+    child.wallCount = 0;
 
     // Keep walls shared by both parents
-    for (0..child.walls.len) |j| {
-        if (count >= budget) break;
+    for (candidates, 0..) |pos, j| {
+        if (child.wallCount >= budget) break;
         if (parent1.walls[j] and parent2.walls[j]) {
             child.walls[j] = true;
-            count += 1;
+            child.isWallMap[pos.row * cols + pos.col] = true;
+            child.wallCount += 1;
         }
     }
 
     // Fill remaining from walls only one parent has
-    for (0..child.walls.len) |j| {
-        if (count >= budget) break;
+    for (candidates, 0..) |pos, j| {
+        if (child.wallCount >= budget) break;
         if (!child.walls[j] and (parent1.walls[j] or parent2.walls[j])) {
             child.walls[j] = true;
-            count += 1;
+            child.isWallMap[pos.row * cols + pos.col] = true;
+            child.wallCount += 1;
         }
     }
 
@@ -621,40 +671,33 @@ fn crossoverInto(child: *Individual, parent1: *const Individual, parent2: *const
     child.valid = false;
 }
 
-fn mutate(individual: *Individual, random: std.Random) void {
+fn mutate(individual: *Individual, candidates: []const Pos, cols: usize, random: std.Random) void {
+    if (individual.wallCount == 0) return;
+
     const roll = random.intRangeLessThan(u32, 0, 100);
     const swaps: usize = if (roll < 65) 1 else if (roll < 85) 2 else 3;
 
     for (0..swaps) |_| {
-        var wallCount: usize = 0;
-        for (individual.walls) |w| {
-            if (w) wallCount += 1;
-        }
-        if (wallCount == 0) return;
-
-        // Remove a random placed wall
-        var target = random.intRangeLessThan(usize, 0, wallCount);
+        // Remove the k-th placed wall using cached wallCount (no scan needed for count)
+        var target = random.intRangeLessThan(usize, 0, individual.wallCount);
         for (individual.walls, 0..) |w, i| {
             if (w) {
                 if (target == 0) {
-                    individual.walls[i] = false;
+                    individual.removeWall(i, candidates[i], cols);
                     break;
                 }
                 target -= 1;
             }
         }
 
-        // Add a wall at a random empty slot
-        var emptyCount: usize = 0;
-        for (individual.walls) |w| {
-            if (!w) emptyCount += 1;
-        }
-
+        // Add a wall at a random empty slot — emptyCount = candidates.len - wallCount
+        const emptyCount = individual.walls.len - @as(usize, individual.wallCount);
+        if (emptyCount == 0) return;
         target = random.intRangeLessThan(usize, 0, emptyCount);
         for (individual.walls, 0..) |w, i| {
             if (!w) {
                 if (target == 0) {
-                    individual.walls[i] = true;
+                    individual.placeWall(i, candidates[i], cols);
                     break;
                 }
                 target -= 1;
@@ -670,36 +713,51 @@ fn mutate(individual: *Individual, random: std.Random) void {
 /// Find placed walls that sit on the boundary of the reachable region
 /// (adjacent to both reachable and unreachable cells). These are candidates
 /// for removal during expand mutation.
-fn findBoundaryWalls(candidates: []const Pos, walls: []const bool, puzzle: *const Puzzle, scratch: *BFSScratch) ![]usize {
-    const result = try bfs(puzzle, candidates, walls, scratch, false);
+fn findBoundaryWalls(individual: *const Individual, candidates: []const Pos, puzzle: *const Puzzle, scratch: *BFSScratch) []usize {
+    const result = bfs(puzzle, individual.isWallMap, scratch, false);
     if (result.reachesBoundary) return scratch.boundaryBuf[0..0];
 
+    const cols = puzzle.cols;
     var count: usize = 0;
 
     for (candidates, 0..) |pos, i| {
-        if (!walls[i]) continue;
+        if (!individual.walls[i]) continue;
 
+        const ci = pos.row * cols + pos.col;
         var hasReachableNeighbor = false;
         var hasBlockedNeighbor = false;
 
-        for (directions) |dir| {
-            const nr = @as(i64, @intCast(pos.row)) + dir[0];
-            const nc = @as(i64, @intCast(pos.col)) + dir[1];
-
-            if (nr < 0 or nr >= puzzle.rows or nc < 0 or nc >= puzzle.cols) {
-                hasBlockedNeighbor = true;
-                continue;
-            }
-
-            const nrow: usize = @intCast(nr);
-            const ncol: usize = @intCast(nc);
-            const ni = idx(puzzle.cols, nrow, ncol);
-
-            if (scratch.visited[ni]) {
-                hasReachableNeighbor = true;
-            } else {
-                hasBlockedNeighbor = true;
-            }
+        // Up
+        if (pos.row == 0) {
+            hasBlockedNeighbor = true;
+        } else if (scratch.visited[ci - cols]) {
+            hasReachableNeighbor = true;
+        } else {
+            hasBlockedNeighbor = true;
+        }
+        // Down
+        if (pos.row + 1 >= puzzle.rows) {
+            hasBlockedNeighbor = true;
+        } else if (scratch.visited[ci + cols]) {
+            hasReachableNeighbor = true;
+        } else {
+            hasBlockedNeighbor = true;
+        }
+        // Left
+        if (pos.col == 0) {
+            hasBlockedNeighbor = true;
+        } else if (scratch.visited[ci - 1]) {
+            hasReachableNeighbor = true;
+        } else {
+            hasBlockedNeighbor = true;
+        }
+        // Right
+        if (pos.col + 1 >= puzzle.cols) {
+            hasBlockedNeighbor = true;
+        } else if (scratch.visited[ci + 1]) {
+            hasReachableNeighbor = true;
+        } else {
+            hasBlockedNeighbor = true;
         }
 
         if (hasReachableNeighbor and hasBlockedNeighbor) {
@@ -714,30 +772,28 @@ fn findBoundaryWalls(candidates: []const Pos, walls: []const bool, puzzle: *cons
 /// Attempt to expand a valid enclosure by removing a boundary wall and
 /// re-sealing the leak with walls placed on edge cells. Returns true if
 /// the expansion succeeded and the individual was improved.
-fn expandMutation(individual: *Individual, candidates: []const Pos, puzzle: *const Puzzle, scratch: *BFSScratch, random: std.Random) !bool {
+fn expandMutation(individual: *Individual, candidates: []const Pos, puzzle: *const Puzzle, scratch: *BFSScratch, random: std.Random) bool {
     if (!individual.valid) return false;
 
-    const boundaryWalls = try findBoundaryWalls(candidates, individual.walls, puzzle, scratch);
+    const boundaryWalls = findBoundaryWalls(individual, candidates, puzzle, scratch);
     if (boundaryWalls.len == 0) return false;
+
+    const cols = puzzle.cols;
 
     // Remove a random boundary wall
     const pickIdx = random.intRangeLessThan(usize, 0, boundaryWalls.len);
     const wallToRemove = boundaryWalls[pickIdx];
-    individual.walls[wallToRemove] = false;
+    individual.removeWall(wallToRemove, candidates[wallToRemove], cols);
 
     // Check if still valid after removal (rare but free expansion)
-    const leakResult = try bfs(puzzle, candidates, individual.walls, scratch, false);
+    const leakResult = bfs(puzzle, individual.isWallMap, scratch, false);
     if (!leakResult.reachesBoundary) {
         individual.score = leakResult.score;
         return true;
     }
 
-    // Count current walls to determine remaining budget
-    var currentWallCount: u32 = 0;
-    for (individual.walls) |w| {
-        if (w) currentWallCount += 1;
-    }
-    const remainingBudget = puzzle.budget - currentWallCount;
+    // Remaining budget from cached wallCount (no O(n) scan)
+    const remainingBudget = puzzle.budget - individual.wallCount;
 
     // Find candidate seal positions: reachable, unplaced, on the edge of the reachable region
     var sealCandidates: [256]usize = undefined;
@@ -747,30 +803,37 @@ fn expandMutation(individual: *Individual, candidates: []const Pos, puzzle: *con
         if (individual.walls[i]) continue;
         if (pos.row == puzzle.horseRow and pos.col == puzzle.horseCol) continue;
 
-        const cellIdx = idx(puzzle.cols, pos.row, pos.col);
+        const cellIdx = pos.row * cols + pos.col;
         if (!scratch.visited[cellIdx]) continue;
 
         var onEdge = false;
         if (pos.row == 0 or pos.row == puzzle.rows - 1 or pos.col == 0 or pos.col == puzzle.cols - 1) {
             onEdge = true;
         } else {
-            for (directions) |dir| {
-                const nr = @as(i64, @intCast(pos.row)) + dir[0];
-                const nc = @as(i64, @intCast(pos.col)) + dir[1];
-                if (nr < 0 or nr >= puzzle.rows or nc < 0 or nc >= puzzle.cols) {
+            // Up
+            const ct_u = puzzle.grid[cellIdx - cols].type;
+            if (ct_u == .water or ct_u == .wall or !scratch.visited[cellIdx - cols]) {
+                onEdge = true;
+            }
+            // Down
+            if (!onEdge) {
+                const ct_d = puzzle.grid[cellIdx + cols].type;
+                if (ct_d == .water or ct_d == .wall or !scratch.visited[cellIdx + cols]) {
                     onEdge = true;
-                    break;
                 }
-                const nrow: usize = @intCast(nr);
-                const ncol: usize = @intCast(nc);
-                const cellType = puzzle.grid[nrow][ncol].type;
-                if (cellType == .water or cellType == .wall) {
+            }
+            // Left
+            if (!onEdge) {
+                const ct_l = puzzle.grid[cellIdx - 1].type;
+                if (ct_l == .water or ct_l == .wall or !scratch.visited[cellIdx - 1]) {
                     onEdge = true;
-                    break;
                 }
-                if (!scratch.visited[idx(puzzle.cols, nrow, ncol)]) {
+            }
+            // Right
+            if (!onEdge) {
+                const ct_r = puzzle.grid[cellIdx + 1].type;
+                if (ct_r == .water or ct_r == .wall or !scratch.visited[cellIdx + 1]) {
                     onEdge = true;
-                    break;
                 }
             }
         }
@@ -796,12 +859,12 @@ fn expandMutation(individual: *Individual, candidates: []const Pos, puzzle: *con
     var placed: u32 = 0;
     for (0..sealCount) |si| {
         if (placed >= remainingBudget) break;
-        individual.walls[sealCandidates[si]] = true;
+        individual.placeWall(sealCandidates[si], candidates[sealCandidates[si]], cols);
         placed += 1;
     }
 
     // Check if we sealed the leak
-    const sealResult = try bfs(puzzle, candidates, individual.walls, scratch, true);
+    const sealResult = bfs(puzzle, individual.isWallMap, scratch, true);
     if (!sealResult.reachesBoundary) {
         individual.score = sealResult.score;
         individual.valid = true;
@@ -809,13 +872,12 @@ fn expandMutation(individual: *Individual, candidates: []const Pos, puzzle: *con
     }
 
     // Failed — revert all changes
-    individual.walls[wallToRemove] = true;
-    for (0..sealCount) |si| {
-        if (si >= placed) break;
-        individual.walls[sealCandidates[si]] = false;
+    individual.placeWall(wallToRemove, candidates[wallToRemove], cols);
+    for (0..placed) |si| {
+        individual.removeWall(sealCandidates[si], candidates[sealCandidates[si]], cols);
     }
 
-    const revertResult = try bfs(puzzle, candidates, individual.walls, scratch, true);
+    const revertResult = bfs(puzzle, individual.isWallMap, scratch, true);
     individual.score = revertResult.score;
     individual.valid = !revertResult.reachesBoundary;
 
@@ -827,13 +889,15 @@ fn expandMutation(individual: *Individual, candidates: []const Pos, puzzle: *con
 // =============================================================================
 
 /// Allocate a population of individuals with pre-allocated wall buffers.
-fn allocPopulation(allocator: std.mem.Allocator, size: usize, numCandidates: usize) ![]Individual {
+fn allocPopulation(allocator: std.mem.Allocator, size: usize, numCandidates: usize, gridSize: usize) ![]Individual {
     const pop = try allocator.alloc(Individual, size);
     for (pop) |*ind| {
         ind.* = .{
             .walls = try allocator.alloc(bool, numCandidates),
+            .isWallMap = try allocator.alloc(bool, gridSize),
             .score = 0,
             .valid = false,
+            .wallCount = 0,
             .allocator = allocator,
         };
     }
@@ -843,19 +907,21 @@ fn allocPopulation(allocator: std.mem.Allocator, size: usize, numCandidates: usi
 fn freePopulation(allocator: std.mem.Allocator, pop: []Individual) void {
     for (pop) |*ind| {
         allocator.free(ind.walls);
+        allocator.free(ind.isWallMap);
     }
     allocator.free(pop);
 }
 
 /// Randomly initialize an individual's wall placement.
-fn randomizeWalls(individual: *Individual, budget: u32, random: std.Random) void {
+/// Builds isWallMap and wallCount from scratch (used on init and full restarts).
+fn randomizeWalls(individual: *Individual, candidates: []const Pos, cols: usize, budget: u32, random: std.Random) void {
     @memset(individual.walls, false);
-    var placed: u32 = 0;
-    while (placed < budget) {
+    @memset(individual.isWallMap, false);
+    individual.wallCount = 0;
+    while (individual.wallCount < budget) {
         const i = random.intRangeLessThan(usize, 0, individual.walls.len);
         if (!individual.walls[i]) {
-            individual.walls[i] = true;
-            placed += 1;
+            individual.placeWall(i, candidates[i], cols);
         }
     }
 }
@@ -935,7 +1001,7 @@ fn acceptWithAnnealing(
 // =============================================================================
 
 /// Run the genetic algorithm to find the best wall placement.
-fn solve(puzzle: *const Puzzle, candidates: []const Pos, random: std.Random, popSize: usize, allocator: std.mem.Allocator) !Individual {
+fn solve(puzzle: *const Puzzle, candidates: []const Pos, random: std.Random, popSize: usize, allocator: std.mem.Allocator) !SolveResult {
     var scratch = try BFSScratch.init(allocator, puzzle.rows * puzzle.cols);
     defer scratch.deinit();
 
@@ -943,9 +1009,10 @@ fn solve(puzzle: *const Puzzle, candidates: []const Pos, random: std.Random, pop
     const coolingRate: f64 = 0.9995;
     // Pre-allocate two population buffers and swap between them (no per-generation allocation)
     // more information found @ https://www.youtube.com/watch?v=aJCgtiN5K14
-    const popA = try allocPopulation(allocator, popSize, candidates.len);
+    const gridSize = puzzle.rows * puzzle.cols;
+    const popA = try allocPopulation(allocator, popSize, candidates.len, gridSize);
     defer freePopulation(allocator, popA);
-    const popB = try allocPopulation(allocator, popSize, candidates.len);
+    const popB = try allocPopulation(allocator, popSize, candidates.len, gridSize);
     defer freePopulation(allocator, popB);
 
     var population = popA;
@@ -953,8 +1020,8 @@ fn solve(puzzle: *const Puzzle, candidates: []const Pos, random: std.Random, pop
 
     // Initialize population with random wall placements
     for (population) |*individual| {
-        randomizeWalls(individual, puzzle.budget, random);
-        try evaluateFitness(individual, candidates, puzzle, &scratch);
+        randomizeWalls(individual, candidates, puzzle.cols, puzzle.budget, random);
+        evaluateFitness(individual, candidates, puzzle, &scratch);
     }
 
     std.debug.print("Starting GA: {} candidates, budget {}, population {}\n", .{ candidates.len, puzzle.budget, popSize });
@@ -963,7 +1030,6 @@ fn solve(puzzle: *const Puzzle, candidates: []const Pos, random: std.Random, pop
     std.debug.print("Gen 0: best score = {}\n", .{population[0].score});
 
     var bestSoFar: i32 = population[0].score;
-    var genTimer = try std.time.Timer.start();
     var gensSinceImprovement: usize = 0;
     var restartCount: usize = 0;
 
@@ -974,12 +1040,14 @@ fn solve(puzzle: *const Puzzle, candidates: []const Pos, random: std.Random, pop
         temperature *= coolingRate;
         if (temperature < 0.01) temperature = 0.01;
 
-        // Copy top valid elites
+        // Copy top valid elites (walls + isWallMap + metadata)
         for (0..prevTopK.validCount) |vi| {
             const si = prevTopK.validIndices[vi];
             @memcpy(next[eliteIdx].walls, population[si].walls);
+            @memcpy(next[eliteIdx].isWallMap, population[si].isWallMap);
             next[eliteIdx].score = population[si].score;
             next[eliteIdx].valid = population[si].valid;
+            next[eliteIdx].wallCount = population[si].wallCount;
             eliteIdx += 1;
         }
 
@@ -987,8 +1055,10 @@ fn solve(puzzle: *const Puzzle, candidates: []const Pos, random: std.Random, pop
         for (0..prevTopK.invalidCount) |ii| {
             const si = prevTopK.invalidIndices[ii];
             @memcpy(next[eliteIdx].walls, population[si].walls);
+            @memcpy(next[eliteIdx].isWallMap, population[si].isWallMap);
             next[eliteIdx].score = population[si].score;
             next[eliteIdx].valid = population[si].valid;
+            next[eliteIdx].wallCount = population[si].wallCount;
             eliteIdx += 1;
         }
 
@@ -997,28 +1067,28 @@ fn solve(puzzle: *const Puzzle, candidates: []const Pos, random: std.Random, pop
             const parent1 = tournamentSelect(population, random);
             const parent2 = tournamentSelect(population, random);
 
-            crossoverInto(&next[i], parent1, parent2, puzzle.budget);
+            crossoverInto(&next[i], parent1, parent2, candidates, puzzle.cols, puzzle.budget);
 
             const roll = random.intRangeLessThan(u32, 0, 100);
 
             if (roll < 10) {
                 // 10%: BIG jump
-                try destructiveMutation(&next[i], candidates, puzzle, &scratch, random);
+                destructiveMutation(&next[i], candidates, puzzle, &scratch, random);
             } else if (roll < mutationRate) {
                 // normal mutation
-                mutate(&next[i], random);
+                mutate(&next[i], candidates, puzzle.cols, random);
             }
 
-            try evaluateFitness(&next[i], candidates, puzzle, &scratch);
+            evaluateFitness(&next[i], candidates, puzzle, &scratch);
 
-            // Compare against parent1 (or better parent)
-            const parentScore = parent1.score;
-
-            if (!acceptWithAnnealing(parentScore, next[i].score, temperature, random)) {
-                // Reject → copy parent instead
+            // Compare against parent1 (or better parent) — reject via simulated annealing
+            if (!acceptWithAnnealing(parent1.score, next[i].score, temperature, random)) {
+                // Reject → copy parent instead (walls + isWallMap + metadata)
                 @memcpy(next[i].walls, parent1.walls);
+                @memcpy(next[i].isWallMap, parent1.isWallMap);
                 next[i].score = parent1.score;
                 next[i].valid = parent1.valid;
+                next[i].wallCount = parent1.wallCount;
             }
         }
 
@@ -1034,48 +1104,40 @@ fn solve(puzzle: *const Puzzle, candidates: []const Pos, random: std.Random, pop
         if (doPruneExpand) {
             for (0..topK.validCount) |vi| {
                 const ei = topK.validIndices[vi];
-                try pruneWalls(&population[ei], candidates, puzzle, &scratch);
-                _ = try expandMutation(&population[ei], candidates, puzzle, &scratch, random);
+                pruneWalls(&population[ei], candidates, puzzle, &scratch);
+                _ = expandMutation(&population[ei], candidates, puzzle, &scratch, random);
             }
         }
 
         if (population[topK.bestIdx].score > bestSoFar) {
             bestSoFar = population[topK.bestIdx].score;
             gensSinceImprovement = 0;
-            std.debug.print("Gen {}: NEW BEST = {}\n", .{ generation, bestSoFar });
         } else {
             gensSinceImprovement += 1;
         }
 
-        const restartCutoff: usize = gaGenerations * 3/4;
+        const restartCutoff: usize = gaGenerations * 3 / 4;
         // Diversity injection on stagnation
         if (gensSinceImprovement >= stagnationThreshold and restartCount < maxRestarts and generation < restartCutoff) {
-            temperature = 5.0; 
+            temperature = 5.0;
             restartCount += 1;
             std.debug.print("Gen {}: RESTART #{} (stagnant for {} gens)\n", .{ generation, restartCount, gensSinceImprovement });
 
             // Reinitialize everyone except elites
             for (eliteCount..popSize) |i| {
-                randomizeWalls(&population[i], puzzle.budget, random);
-                try evaluateFitness(&population[i], candidates, puzzle, &scratch);
+                randomizeWalls(&population[i], candidates, puzzle.cols, puzzle.budget, random);
+                evaluateFitness(&population[i], candidates, puzzle, &scratch);
             }
 
             gensSinceImprovement = 0;
-        }
-
-        if (generation % 1000 == 0) {
-            const elapsed = genTimer.read();
-            const gensPerSec = @as(f64, @floatFromInt(generation)) / (@as(f64, @floatFromInt(elapsed)) / 1_000_000_000.0);
-            std.debug.print("Gen {}: best = {} ({d:.0} gens/sec)\n", .{ generation, population[0].score, gensPerSec });
         }
     }
 
     const finalTopK = findTopK(population);
     const finalBest = finalTopK.bestIdx;
 
-    std.debug.print("\nGA complete. Best score = {}, valid = {}\n", .{ population[finalBest].score, population[finalBest].valid });
 
-    // Return a copy of the best individual (caller owns the walls slice)
+    // Return a copy of the best walls (caller owns the slice).
     const bestWalls = try allocator.alloc(bool, candidates.len);
     @memcpy(bestWalls, population[finalBest].walls);
 
@@ -1083,7 +1145,6 @@ fn solve(puzzle: *const Puzzle, candidates: []const Pos, random: std.Random, pop
         .walls = bestWalls,
         .score = population[finalBest].score,
         .valid = population[finalBest].valid,
-        .allocator = allocator,
     };
 }
 
@@ -1114,7 +1175,7 @@ pub fn main() !void {
     defer scratch.deinit();
 
     // Show initial state with pre-placed walls
-    const initialReach = try bfs(&puzzle, null, null, &scratch, true);
+    const initialReach = bfs(&puzzle, null, &scratch, true);
     std.debug.print("With pre-placed solution walls:\n", .{});
     std.debug.print("  Reachable: {}, Score: {}, Reaches boundary: {}\n\n", .{
         initialReach.count, initialReach.score, initialReach.reachesBoundary,
@@ -1124,7 +1185,7 @@ pub fn main() !void {
     removePrePlacedWalls(&puzzle);
 
     // Compute full reachability with no walls
-    const fullReach = try bfs(&puzzle, null, null, &scratch, false);
+    const fullReach = bfs(&puzzle, null, &scratch, false);
     const reachableMap = try allocator.alloc(bool, puzzle.rows * puzzle.cols);
     defer allocator.free(reachableMap);
     @memcpy(reachableMap, scratch.visited);
@@ -1148,7 +1209,7 @@ pub fn main() !void {
     defer allocator.free(threads);
 
     const baseSeed: u64 = 0xFACADE;
-    const popSizes = [_]usize{200, 200, 200, 200, 200, 200, 200, 200, 100, 100, 100, 100, 50, 50, 50, 50};
+    const popSizes = [_]usize{ 200, 200, 200, 200, 200, 200, 200, 200, 100, 100, 100, 100, 50, 50, 50, 50 };
 
     for (0..numThreads) |i| {
         contexts[i] = .{
@@ -1206,13 +1267,8 @@ pub fn main() !void {
         return;
     }
 
-    var best = Individual{
-        .walls = contexts[bestIdx.?].result.?.walls,
-        .score = contexts[bestIdx.?].result.?.score,
-        .valid = contexts[bestIdx.?].result.?.valid,
-        .allocator = allocator,
-    };
-    defer best.deinit();
+    const best = contexts[bestIdx.?].result.?;
+    defer allocator.free(best.walls);
 
     std.debug.print("Best result from thread {}\n", .{bestIdx.?});
 
@@ -1242,11 +1298,11 @@ pub fn main() !void {
     std.debug.print("  Score: {}\n", .{best.score});
     std.debug.print("  Valid: {}\n", .{best.valid});
 
-    // Apply walls to grid and display
+    // Apply walls to flat grid and display
     std.debug.print("  Walls placed at:\n", .{});
     for (candidates, 0..) |pos, i| {
         if (best.walls[i]) {
-            puzzle.grid[pos.row][pos.col] = .{ .type = .wall };
+            puzzle.grid[pos.row * puzzle.cols + pos.col] = .{ .type = .wall };
             std.debug.print("    ({}, {})\n", .{ pos.row, pos.col });
         }
     }
