@@ -1,0 +1,276 @@
+With pre-placed solution walls:
+  Reachable: 1, Score: 1, Reaches boundary: false
+
+Grid: 19 rows x 46 cols
+Horse at: (10, 25)
+Budget: 25
+
+ 0 |  .  ~  .  .  ~  ~  ~  .  .  ~  ~  ~  ~  .  .  .  .  .  .  ~  .  .  .  .  ~  .  .  ~  ~  ~  .  .  ~  ~  ~  ~  .  .  .  .  .  .  ~  .  .  . 
+ 1 |  .  ~  .  .  .  ~  ~  .  .  ~  ~  ~  .  .  .  .  .  .  .  ~  .  .  .  ~  .  .  .  ~  ~  .  .  ~  ~  ~  .  .  .  .  .  .  .  ~  .  .  .  . 
+ 2 |  .  ~  .  ~  .  .  ~  .  .  .  .  .  .  .  .  ~  ~  .  .  ~  .  .  .  ~  .  ~  .  .  ~  .  .  .  .  .  .  .  .  ~  ~  .  .  ~  .  .  .  . 
+ 3 |  .  ~  ~  ~  .  .  .  .  .  .  .  .  .  .  ~  ~  ~  ~  .  ~  .  .  .  ~  ~  ~  .  .  .  .  .  .  .  .  .  .  ~  ~  ~  ~  .  ~  .  .  .  . 
+ 4 |  .  ~  ~  ~  .  .  .  .  .  .  .  .  ~  ~  ~  ~  ~  .  .  ~  .  .  .  ~  ~  ~  .  .  .  .  .  .  .  .  ~  ~  ~  ~  ~  .  .  ~  .  .  .  . 
+ 5 |  .  ~  ~  .  .  .  ~  ~  .  .  .  .  ~  ~  ~  .  .  .  .  ~  .  .  .  ~  ~  .  .  .  ~  ~  .  .  .  .  ~  ~  ~  .  .  .  .  ~  .  .  .  . 
+ 6 |  .  ~  ~  .  .  .  ~  ~  ~  .  .  .  .  .  .  .  .  .  .  ~  ~  .  .  ~  ~  .  .  .  ~  ~  ~  .  .  .  .  .  .  .  .  .  .  ~  ~  .  ~  . 
+ 7 |  .  ~  .  .  .  .  ~  ~  ~  .  .  ~  ~  ~  ~  .  .  .  .  .  .  ~  .  ~  .  .  .  .  ~  ~  ~  .  .  ~  ~  ~  ~  .  .  .  .  .  .  ~  .  . 
+ 8 |  .  .  . P3  .  .  .  ~  ~  .  .  .  ~  ~  ~  ~  ~  .  .  ~  . P5  .  .  . P7  .  .  .  ~  ~  .  .  .  ~  ~  ~  ~  ~  .  .  ~  . P7  .  . 
+ 9 |  .  ~  .  .  .  .  .  .  .  .  ~  .  .  .  ~  ~  ~  ~  .  ~  ~  .  .  ~  .  W  .  .  .  .  .  .  ~  .  .  .  ~  ~  ~  ~  .  ~  ~  .  .  ~ 
+10 |  .  .  .  .  .  .  .  . P2  .  ~  ~  .  .  .  .  ~  ~  .  ~  . P4  .  .  W  H  W  .  .  . P8  .  ~  ~  .  .  .  .  ~  ~  .  ~  . P8  .  ~ 
+11 |  .  ~  ~  .  ~  ~  ~  ~  .  .  ~  ~  .  .  .  .  .  .  .  ~  .  ~  .  ~  ~  W  ~  ~  ~  ~  .  .  ~  ~  .  .  .  .  .  .  .  ~  .  ~  .  . 
+12 |  .  ~  .  .  .  .  .  .  .  .  ~  ~  ~  .  .  . P1  .  .  .  . P3  .  ~  .  .  .  .  .  .  .  .  ~  ~  ~  .  .  . P11  .  .  .  . P12  .  . 
+13 |  .  ~  . P5  . P6  .  ~  .  .  .  ~  ~  ~  .  .  .  .  .  ~  .  .  .  ~  . P10  . P9  .  ~  .  .  .  ~  ~  ~  .  .  .  .  .  ~  .  .  .  . 
+14 |  .  ~  .  .  .  .  .  ~  ~  ~  ~  ~  ~  ~  .  .  .  .  .  ~  . P2  .  ~  .  .  .  .  .  ~  ~  ~  ~  ~  ~  ~  .  .  .  .  .  ~  . P12  .  ~ 
+15 |  .  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  .  .  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  .  .  . 
+16 |  .  ~ P6  *  *  *  *  *  *  *  *  *  *  *  *  *  *  * P4  ~  . P1  .  ~ P9  *  *  *  *  *  *  *  *  *  *  *  *  *  *  * P10  ~  . P11  .  . 
+17 |  .  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  .  ~  .  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  .  ~  .  . 
+18 |  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  ~  .  ~ 
+
+With pre-placed walls removed (full budget):
+  Reachable: 515, Score: 605, Reaches boundary: true
+
+Running 14 parallel solvers
+Starting GA: 460 candidates, budget 25, population 200
+Starting GA: 460 candidates, budget 25, population 200
+Gen 0: best score = -103
+Starting GA: 460 candidates, budget 25, population 200
+Gen 0: best score = -115
+Starting GA: 460 candidates, budget 25, population 200
+Gen 0: best score = -105
+Starting GA: 460 candidates, budget 25, population 200
+Gen 0: best score = -98
+Gen 1: NEW BEST = 0
+Gen 1: NEW BEST = 0
+Gen 1: NEW BEST = 0
+Gen 1: NEW BEST = 0
+Gen 0: best score = -120
+Starting GA: 460 candidates, budget 25, population 50
+Gen 0: best score = -117
+Gen 1: NEW BEST = 0
+Starting GA: 460 candidates, budget 25, population 100
+Gen 0: best score = -120
+Starting GA: 460 candidates, budget 25, population 100
+Gen 0: best score = -122
+Starting GA: 460 candidates, budget 25, population 100
+Gen 0: best score = -108
+Gen 1: NEW BEST = 0
+Gen 1: NEW BEST = 0
+Gen 1: NEW BEST = 0
+Gen 1: NEW BEST = 0
+Starting GA: 460 candidates, budget 25, population 200
+Gen 0: best score = -101
+Starting GA: 460 candidates, budget 25, population 50
+Gen 0: best score = -131
+Starting GA: 460 candidates, budget 25, population 100
+Gen 0: best score = -118
+Gen 1: NEW BEST = 0
+Starting GA: 460 candidates, budget 25, population 200
+Gen 0: best score = -89
+Gen 1: NEW BEST = 0
+Starting GA: 460 candidates, budget 25, population 200
+Gen 0: best score = -104
+Gen 1: NEW BEST = 0
+Gen 1: NEW BEST = 0
+Gen 1: NEW BEST = 0
+Gen 232: NEW BEST = 83
+Gen 1000: best = 0 (10994 gens/sec)
+Gen 1000: best = 0 (10174 gens/sec)
+Gen 1000: best = 0 (6493 gens/sec)
+Gen 1000: best = 0 (6240 gens/sec)
+Gen 1000: best = 0 (5846 gens/sec)
+Gen 2000: best = 0 (11448 gens/sec)
+Gen 1000: best = 0 (5522 gens/sec)
+Gen 2000: best = 0 (11028 gens/sec)
+Gen 3000: best = 0 (12534 gens/sec)
+Gen 3000: best = 0 (11976 gens/sec)
+Gen 2000: best = 0 (6551 gens/sec)
+Gen 1000: best = 0 (3230 gens/sec)
+Gen 1000: best = 0 (3182 gens/sec)
+Gen 1000: best = 0 (3229 gens/sec)
+Gen 2000: best = 0 (6369 gens/sec)
+Gen 4000: best = 0 (12666 gens/sec)
+Gen 1000: best = 0 (3120 gens/sec)
+Gen 2000: best = 0 (6260 gens/sec)
+Gen 1000: best = 78 (3137 gens/sec)
+Gen 1000: best = 0 (3056 gens/sec)
+Gen 4000: best = 0 (12336 gens/sec)
+Gen 1000: best = 0 (3058 gens/sec)
+Gen 1000: best = 0 (2997 gens/sec)
+Gen 2000: best = 0 (5971 gens/sec)
+Gen 5000: best = 0 (13199 gens/sec)
+Gen 5000: best = 0 (12673 gens/sec)
+Gen 6000: best = 0 (13446 gens/sec)
+Gen 3000: best = 0 (6705 gens/sec)
+Gen 3000: best = 0 (6657 gens/sec)
+Gen 6000: best = 0 (12782 gens/sec)
+Gen 3000: best = 0 (6273 gens/sec)
+Gen 3000: best = 0 (6163 gens/sec)
+Gen 7000: best = 0 (13423 gens/sec)
+Gen 7000: best = 0 (12918 gens/sec)
+Gen 4000: best = 0 (6852 gens/sec)
+Gen 4000: best = 0 (6773 gens/sec)
+Gen 8000: best = 0 (13423 gens/sec)
+Gen 2000: best = 0 (3340 gens/sec)
+Gen 2000: best = 0 (3297 gens/sec)
+Gen 2000: best = 0 (3268 gens/sec)
+Gen 2000: best = 0 (3245 gens/sec)
+Gen 8000: best = 0 (12992 gens/sec)
+Gen 2000: best = 83 (3197 gens/sec)
+Gen 4000: best = 0 (6377 gens/sec)
+Gen 2000: best = 0 (3195 gens/sec)
+Gen 2000: best = 0 (3130 gens/sec)
+Gen 4000: best = 0 (6199 gens/sec)
+Gen 2000: best = 0 (3072 gens/sec)
+Gen 9000: best = 0 (13479 gens/sec)
+Gen 9000: best = 0 (13034 gens/sec)
+Gen 5000: best = 0 (6928 gens/sec)
+Gen 10000: best = 0 (13600 gens/sec)
+Gen 5000: best = 0 (6790 gens/sec)
+Gen 10000: best = 0 (13197 gens/sec)
+Gen 5000: best = 0 (6528 gens/sec)
+Gen 5000: best = 0 (6218 gens/sec)
+Gen 11000: best = 0 (13605 gens/sec)
+Gen 11000: best = 0 (13311 gens/sec)
+Gen 6000: best = 0 (6997 gens/sec)
+Gen 12000: best = 0 (13493 gens/sec)
+Gen 12000: best = 0 (13475 gens/sec)
+Gen 6000: best = 0 (6675 gens/sec)
+Gen 3000: best = 0 (3322 gens/sec)
+Gen 3000: best = 0 (3282 gens/sec)
+Gen 3000: best = 78 (3291 gens/sec)
+Gen 6000: best = 0 (6570 gens/sec)
+Gen 3000: best = 0 (3258 gens/sec)
+Gen 3000: best = 0 (3224 gens/sec)
+Gen 3000: best = 0 (3207 gens/sec)
+Gen 3000: best = 0 (3169 gens/sec)
+Gen 6000: best = 0 (6356 gens/sec)
+Gen 13000: best = 0 (13587 gens/sec)
+Gen 3000: best = 0 (3115 gens/sec)
+Gen 13000: best = 0 (13418 gens/sec)
+Gen 7000: best = 0 (7029 gens/sec)
+Gen 7000: best = 0 (6737 gens/sec)
+Gen 14000: best = 0 (13469 gens/sec)
+Gen 14000: best = 0 (13324 gens/sec)
+Gen 7000: best = 0 (6639 gens/sec)
+Gen 15000: best = 0 (13531 gens/sec)
+Gen 7000: best = 0 (6300 gens/sec)
+Gen 15000: best = 0 (13335 gens/sec)
+Gen 8000: best = 0 (7009 gens/sec)
+Gen 16000: best = 0 (13594 gens/sec)
+Gen 8000: best = 0 (6751 gens/sec)
+Gen 4000: best = 0 (3364 gens/sec)
+Gen 4000: best = 0 (3328 gens/sec)
+Gen 16000: best = 0 (13259 gens/sec)
+Gen 8000: best = 0 (6625 gens/sec)
+Gen 4000: best = 0 (3309 gens/sec)
+Gen 4000: best = 83 (3264 gens/sec)
+Gen 4000: best = 0 (3223 gens/sec)
+Gen 4000: best = 0 (3208 gens/sec)
+Gen 4000: best = 0 (3178 gens/sec)
+Gen 17000: best = 0 (13537 gens/sec)
+Gen 8000: best = 0 (6359 gens/sec)
+Gen 4000: best = 0 (3127 gens/sec)
+Gen 17000: best = 0 (13280 gens/sec)
+Gen 9000: best = 0 (7005 gens/sec)
+Gen 9000: best = 0 (6773 gens/sec)
+Gen 18000: best = 0 (13415 gens/sec)
+Gen 18000: best = 0 (13359 gens/sec)
+Gen 9000: best = 0 (6652 gens/sec)
+Gen 19000: best = 0 (13452 gens/sec)
+Gen 9000: best = 0 (6371 gens/sec)
+Gen 19000: best = 0 (13410 gens/sec)
+Gen 10000: best = 0 (6985 gens/sec)
+Gen 10000: best = 0 (6801 gens/sec)
+Gen 5000: best = 0 (3378 gens/sec)
+Gen 20000: best = 0 (13461 gens/sec)
+Gen 20000: best = 0 (13411 gens/sec)
+Gen 10000: best = 0 (6704 gens/sec)
+Gen 5000: best = 0 (3340 gens/sec)
+Gen 4901: NEW BEST = 84
+Gen 5000: best = 0 (3280 gens/sec)
+Gen 5000: best = 84 (3254 gens/sec)
+Gen 20822: NEW BEST = 1
+Gen 5000: best = 0 (3227 gens/sec)
+Gen 5000: best = 0 (3225 gens/sec)
+Gen 5000: best = 0 (3233 gens/sec)
+Gen 20987: NEW BEST = 78
+Gen 21000: best = 78 (13516 gens/sec)
+Gen 21000: best = 0 (13469 gens/sec)
+Gen 10000: best = 0 (6413 gens/sec)
+Gen 5000: best = 0 (3188 gens/sec)
+Gen 21330: NEW BEST = 79
+Gen 11000: best = 0 (6977 gens/sec)
+Gen 21756: NEW BEST = 80
+Gen 22000: best = 80 (13687 gens/sec)
+Gen 11000: best = 0 (6799 gens/sec)
+Gen 22000: best = 0 (13479 gens/sec)
+Gen 11000: best = 0 (6706 gens/sec)
+Gen 5389: NEW BEST = 86
+Gen 23000: best = 80 (13821 gens/sec)
+Gen 11000: best = 0 (6438 gens/sec)
+Gen 24000: best = 80 (14013 gens/sec)
+Gen 23000: best = 0 (13387 gens/sec)
+Gen 12000: best = 0 (6979 gens/sec)
+Gen 12000: best = 0 (6790 gens/sec)
+Gen 25000: best = 80 (14146 gens/sec)
+Gen 6000: best = 0 (3384 gens/sec)
+Gen 6000: best = 0 (3371 gens/sec)
+Gen 12000: best = 0 (6743 gens/sec)
+Gen 24000: best = 0 (13358 gens/sec)
+Gen 26000: best = 80 (14371 gens/sec)
+Gen 6000: best = 0 (3296 gens/sec)
+Gen 6000: best = 0 (3266 gens/sec)
+Gen 6000: best = 0 (3257 gens/sec)
+Gen 6000: best = 0 (3261 gens/sec)
+Gen 6000: best = 86 (3245 gens/sec)
+Gen 12000: best = 0 (6467 gens/sec)
+Gen 27000: best = 80 (14525 gens/sec)
+Gen 13000: best = 0 (6983 gens/sec)
+Gen 6000: best = 0 (3204 gens/sec)
+Gen 25000: best = 0 (13300 gens/sec)
+Gen 25001: RESTART #1 (stagnant for 25000 gens)
+Gen 28000: best = 80 (14680 gens/sec)
+Gen 13000: best = 0 (6761 gens/sec)
+Gen 13000: best = 0 (6681 gens/sec)
+Gen 26000: best = 0 (13309 gens/sec)
+Gen 29000: best = 80 (14828 gens/sec)
+Gen 14000: best = 0 (7004 gens/sec)
+Gen 13000: best = 0 (6477 gens/sec)
+Gen 30000: best = 80 (14942 gens/sec)
+Gen 30024: NEW BEST = 85
+Gen 27000: best = 0 (13292 gens/sec)
+Gen 14000: best = 0 (6812 gens/sec)
+Gen 30901: NEW BEST = 86
+Gen 31000: best = 86 (15010 gens/sec)
+Gen 7000: best = 0 (3368 gens/sec)
+Gen 14000: best = 0 (6705 gens/sec)
+Gen 28000: best = 0 (13326 gens/sec)
+Gen 7000: best = 0 (3324 gens/sec)
+Gen 32000: best = 86 (15122 gens/sec)
+Gen 7000: best = 0 (3294 gens/sec)
+Gen 7000: best = 0 (3276 gens/sec)
+Gen 7000: best = 0 (3272 gens/sec)
+Gen 15000: best = 0 (7012 gens/sec)
+Gen 7000: best = 86 (3269 gens/sec)
+Gen 7000: best = 0 (3255 gens/sec)
+Gen 14000: best = 0 (6508 gens/sec)
+Gen 32879: NEW BEST = 87
+Gen 7000: best = 0 (3242 gens/sec)
+Gen 33000: best = 87 (15252 gens/sec)
+Gen 29000: best = 0 (13291 gens/sec)
+Gen 15000: best = 0 (6808 gens/sec)
+Gen 34000: best = 87 (15247 gens/sec)
+Gen 15000: best = 0 (6715 gens/sec)
+Gen 30000: best = 0 (13360 gens/sec)
+Gen 35000: best = 87 (15347 gens/sec)
+Gen 16000: best = 0 (6976 gens/sec)
+Gen 15000: best = 0 (6491 gens/sec)
+Gen 31000: best = 0 (13366 gens/sec)
+Gen 36000: best = 87 (15482 gens/sec)
+Gen 16000: best = 0 (6817 gens/sec)
+Gen 8000: best = 0 (3371 gens/sec)
+Gen 37000: best = 87 (15590 gens/sec)
+Gen 8000: best = 0 (3349 gens/sec)
+Gen 32000: best = 0 (13379 gens/sec)
+Gen 16000: best = 0 (6643 gens/sec)
+Gen 38000: best = 87 (15680 gens/sec)
+Gen 8000: best = 0 (3287 gens/sec)

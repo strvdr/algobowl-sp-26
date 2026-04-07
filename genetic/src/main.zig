@@ -292,6 +292,53 @@ fn parseInput(allocator: std.mem.Allocator, data: []const u8) !Puzzle {
     };
 }
 
+fn destructiveMutation(
+    individual: *Individual,
+    candidates: []const Pos,
+    puzzle: *const Puzzle,
+    scratch: *BFSScratch,
+    random: std.Random,
+) !void {
+    // Pick a random center in candidate space
+    const centerIdx = random.intRangeLessThan(usize, 0, candidates.len);
+    const center = candidates[centerIdx];
+
+    // Radius in grid space (tune this)
+    const radius: i32 = @intCast(random.intRangeLessThan(u32, 8, 25));
+
+    // --- REMOVE walls in region ---
+    for (candidates, 0..) |pos, i| {
+        if (!individual.walls[i]) continue;
+
+        const dr = @as(i32, @intCast(pos.row)) - @as(i32, @intCast(center.row));
+        const dc = @as(i32, @intCast(pos.col)) - @as(i32, @intCast(center.col));
+
+        if (dr * dr + dc * dc <= radius * radius) {
+            if (random.float(f32) < 0.6) {
+                individual.walls[i] = false;
+            }
+        }
+    }
+
+    // --- COUNT current walls ---
+    var count: u32 = 0;
+    for (individual.walls) |w| {
+        if (w) count += 1;
+    }
+
+    // --- REGROW walls randomly to fill budget ---
+    while (count < puzzle.budget) {
+        const i = random.intRangeLessThan(usize, 0, candidates.len);
+        if (!individual.walls[i]) {
+            individual.walls[i] = true;
+            count += 1;
+        }
+    }
+
+    // Re-evaluate after mutation
+    try evaluateFitness(individual, candidates, puzzle, scratch);
+}
+
 /// Try to read the optimal score from a companion .json file alongside the input.
 fn readOptimalScore(allocator: std.mem.Allocator, inputPath: []const u8) ?i32 {
     if (!std.mem.endsWith(u8, inputPath, ".txt")) return null;
@@ -869,6 +916,20 @@ fn insertTopK(
     if (count.* < capacity) count.* += 1;
 }
 
+fn acceptWithAnnealing(
+    oldScore: i32,
+    newScore: i32,
+    temperature: f64,
+    random: std.Random,
+) bool {
+    if (newScore >= oldScore) return true;
+
+    const delta = @as(f64, @floatFromInt(newScore - oldScore));
+    const prob = std.math.exp(delta / temperature);
+
+    return random.float(f64) < prob;
+}
+
 // =============================================================================
 // Genetic Algorithm - Main Loop
 // =============================================================================
@@ -878,6 +939,8 @@ fn solve(puzzle: *const Puzzle, candidates: []const Pos, random: std.Random, pop
     var scratch = try BFSScratch.init(allocator, puzzle.rows * puzzle.cols);
     defer scratch.deinit();
 
+    var temperature: f64 = 5.0; // starting temp (tune)
+    const coolingRate: f64 = 0.9995;
     // Pre-allocate two population buffers and swap between them (no per-generation allocation)
     // more information found @ https://www.youtube.com/watch?v=aJCgtiN5K14
     const popA = try allocPopulation(allocator, popSize, candidates.len);
@@ -908,6 +971,8 @@ fn solve(puzzle: *const Puzzle, candidates: []const Pos, random: std.Random, pop
         //copy top-k valid and top-k invalid via O(n) scan from previous gen
         const prevTopK = findTopK(population);
         var eliteIdx: usize = 0;
+        temperature *= coolingRate;
+        if (temperature < 0.01) temperature = 0.01;
 
         // Copy top valid elites
         for (0..prevTopK.validCount) |vi| {
@@ -934,11 +999,27 @@ fn solve(puzzle: *const Puzzle, candidates: []const Pos, random: std.Random, pop
 
             crossoverInto(&next[i], parent1, parent2, puzzle.budget);
 
-            if (random.intRangeLessThan(u32, 0, 100) < mutationRate) {
+            const roll = random.intRangeLessThan(u32, 0, 100);
+
+            if (roll < 10) {
+                // 10%: BIG jump
+                try destructiveMutation(&next[i], candidates, puzzle, &scratch, random);
+            } else if (roll < mutationRate) {
+                // normal mutation
                 mutate(&next[i], random);
             }
 
             try evaluateFitness(&next[i], candidates, puzzle, &scratch);
+
+            // Compare against parent1 (or better parent)
+            const parentScore = parent1.score;
+
+            if (!acceptWithAnnealing(parentScore, next[i].score, temperature, random)) {
+                // Reject → copy parent instead
+                @memcpy(next[i].walls, parent1.walls);
+                next[i].score = parent1.score;
+                next[i].valid = parent1.valid;
+            }
         }
 
         // Swap population buffers
@@ -969,6 +1050,7 @@ fn solve(puzzle: *const Puzzle, candidates: []const Pos, random: std.Random, pop
         const restartCutoff: usize = gaGenerations * 3/4;
         // Diversity injection on stagnation
         if (gensSinceImprovement >= stagnationThreshold and restartCount < maxRestarts and generation < restartCutoff) {
+            temperature = 5.0; 
             restartCount += 1;
             std.debug.print("Gen {}: RESTART #{} (stagnant for {} gens)\n", .{ generation, restartCount, gensSinceImprovement });
 
