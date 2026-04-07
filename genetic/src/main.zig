@@ -957,13 +957,13 @@ fn solve(puzzle: *const Puzzle, candidates: []const Pos, random: std.Random, pop
         try evaluateFitness(individual, candidates, puzzle, &scratch);
     }
 
-    std.debug.print("Starting GA: {} candidates, budget {}, population {}\n", .{ candidates.len, puzzle.budget, popSize });
+    // std.debug.print("Starting GA: {} candidates, budget {}, population {}\n", .{ candidates.len, puzzle.budget, popSize });
 
     std.mem.sort(Individual, population, {}, Individual.compareDescending);
-    std.debug.print("Gen 0: best score = {}\n", .{population[0].score});
+    // std.debug.print("Gen 0: best score = {}\n", .{population[0].score});
 
     var bestSoFar: i32 = population[0].score;
-    var genTimer = try std.time.Timer.start();
+    // var genTimer = try std.time.Timer.start();
     var gensSinceImprovement: usize = 0;
     var restartCount: usize = 0;
 
@@ -1042,17 +1042,17 @@ fn solve(puzzle: *const Puzzle, candidates: []const Pos, random: std.Random, pop
         if (population[topK.bestIdx].score > bestSoFar) {
             bestSoFar = population[topK.bestIdx].score;
             gensSinceImprovement = 0;
-            std.debug.print("Gen {}: NEW BEST = {}\n", .{ generation, bestSoFar });
+            // std.debug.print("Gen {}: NEW BEST = {}\n", .{ generation, bestSoFar });
         } else {
             gensSinceImprovement += 1;
         }
 
-        const restartCutoff: usize = gaGenerations * 3/4;
+        const restartCutoff: usize = gaGenerations * 3 / 4;
         // Diversity injection on stagnation
         if (gensSinceImprovement >= stagnationThreshold and restartCount < maxRestarts and generation < restartCutoff) {
-            temperature = 5.0; 
+            temperature = 5.0;
             restartCount += 1;
-            std.debug.print("Gen {}: RESTART #{} (stagnant for {} gens)\n", .{ generation, restartCount, gensSinceImprovement });
+            // std.debug.print("Gen {}: RESTART #{} (stagnant for {} gens)\n", .{ generation, restartCount, gensSinceImprovement });
 
             // Reinitialize everyone except elites
             for (eliteCount..popSize) |i| {
@@ -1063,17 +1063,17 @@ fn solve(puzzle: *const Puzzle, candidates: []const Pos, random: std.Random, pop
             gensSinceImprovement = 0;
         }
 
-        if (generation % 1000 == 0) {
-            const elapsed = genTimer.read();
-            const gensPerSec = @as(f64, @floatFromInt(generation)) / (@as(f64, @floatFromInt(elapsed)) / 1_000_000_000.0);
-            std.debug.print("Gen {}: best = {} ({d:.0} gens/sec)\n", .{ generation, population[0].score, gensPerSec });
-        }
+        // if (generation % 1000 == 0) {
+        //     const elapsed = genTimer.read();
+        //     const gensPerSec = @as(f64, @floatFromInt(generation)) / (@as(f64, @floatFromInt(elapsed)) / 1_000_000_000.0);
+        //     std.debug.print("Gen {}: best = {} ({d:.0} gens/sec)\n", .{ generation, population[0].score, gensPerSec });
+        // }
     }
 
     const finalTopK = findTopK(population);
     const finalBest = finalTopK.bestIdx;
 
-    std.debug.print("\nGA complete. Best score = {}, valid = {}\n", .{ population[finalBest].score, population[finalBest].valid });
+    // std.debug.print("\nGA complete. Best score = {}, valid = {}\n", .{ population[finalBest].score, population[finalBest].valid });
 
     // Return a copy of the best individual (caller owns the walls slice)
     const bestWalls = try allocator.alloc(bool, candidates.len);
@@ -1148,7 +1148,7 @@ pub fn main() !void {
     defer allocator.free(threads);
 
     const baseSeed: u64 = 0xFACADE;
-    const popSizes = [_]usize{200, 200, 200, 200, 200, 200, 200, 200, 100, 100, 100, 100, 50, 50, 50, 50};
+    const popSizes = [_]usize{ 200, 200, 200, 200, 200, 200, 200, 200, 100, 100, 100, 100, 50, 50, 50, 50 };
 
     for (0..numThreads) |i| {
         contexts[i] = .{
