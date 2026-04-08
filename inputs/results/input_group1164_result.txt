@@ -1,0 +1,12 @@
+64
+#######.#######
+#.a#.aWbWbW#bb#
+#p.#...W.W.#bp#
+####.......####
+#pb....H...Wcp#
+####.......####
+bbb#.b.b.a.Waaa
+bbb#.......#aaa
+bbb####W####aaa
+Score: 64
+Valid: true

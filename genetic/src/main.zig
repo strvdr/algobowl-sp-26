@@ -213,7 +213,7 @@ const TopKResult = struct {
 // =============================================================================
 
 const populationSize: usize = 50;
-const gaGenerations: usize = 200_000;
+const gaGenerations: usize = 100_000;
 const validEliteCount: usize = 5;
 const invalidEliteCount: usize = 5;
 const eliteCount: usize = validEliteCount + invalidEliteCount;
@@ -861,6 +861,189 @@ fn freePopulation(allocator: std.mem.Allocator, pop: []Individual) void {
     allocator.free(pop);
 }
 
+/// Constructively initialize an individual by doing a limited BFS from the horse
+/// and placing walls at the frontier of the explored region. This guarantees a
+/// valid (or near-valid) enclosure from the start. `maxCells` controls how many
+/// cells to explore before stopping — varied across the population for diversity.
+fn constructiveInit(
+    individual: *Individual,
+    candidates: []const Pos,
+    puzzle: *const Puzzle,
+    scratch: *BFSScratch,
+    maxCells: usize,
+    random: std.Random,
+) void {
+    const cols = puzzle.cols;
+    const rows = puzzle.rows;
+
+    // Clear the individual
+    for (individual.walls, 0..) |w, i| {
+        if (w) individual.isWallMap[candidates[i].row * cols + candidates[i].col] = false;
+    }
+    @memset(individual.walls, false);
+    individual.wallCount = 0;
+
+    // BFS from horse with a cell limit
+    var head: usize = 0;
+    var tail: usize = 0;
+    const stamp = scratch.nextStamp();
+
+    const startIdx = puzzle.horseRow * cols + puzzle.horseCol;
+    scratch.visited[startIdx] = stamp;
+    scratch.queue[tail] = .{ .row = puzzle.horseRow, .col = puzzle.horseCol };
+    tail += 1;
+
+    var explored: usize = 0;
+
+    while (head < tail and explored < maxCells) {
+        const current = scratch.queue[head];
+        head += 1;
+        explored += 1;
+
+        const ci = current.row * cols + current.col;
+
+        // Skip expanding from boundary cells — we want to stay enclosed
+        if (current.row == 0 or current.row == rows - 1 or
+            current.col == 0 or current.col == cols - 1) continue;
+
+        // Expand cardinal neighbors
+        const neighbors = [4]struct { dr: i32, dc: i32 }{
+            .{ .dr = -1, .dc = 0 },
+            .{ .dr = 1, .dc = 0 },
+            .{ .dr = 0, .dc = -1 },
+            .{ .dr = 0, .dc = 1 },
+        };
+
+        for (neighbors) |n| {
+            const nr_i32 = @as(i32, @intCast(current.row)) + n.dr;
+            const nc_i32 = @as(i32, @intCast(current.col)) + n.dc;
+            if (nr_i32 < 0 or nr_i32 >= @as(i32, @intCast(rows))) continue;
+            if (nc_i32 < 0 or nc_i32 >= @as(i32, @intCast(cols))) continue;
+            const nr: usize = @intCast(nr_i32);
+            const nc: usize = @intCast(nc_i32);
+            const ni = nr * cols + nc;
+            if (scratch.visited[ni] == stamp) continue;
+            const ct = puzzle.grid[ni].type;
+            if (ct == .water or ct == .wall) continue;
+            scratch.visited[ni] = stamp;
+            scratch.queue[tail] = .{ .row = nr, .col = nc };
+            tail += 1;
+        }
+
+        // Traverse portals — but only if we have enough budget headroom
+        // Portal exits can create huge frontiers, so sometimes skip them
+        if (puzzle.grid[ci].type == .portal) {
+            for (puzzle.portals) |pp| {
+                const partner = portalPartner(pp, current.row, current.col) orelse continue;
+                const pi = partner.row * cols + partner.col;
+                if (scratch.visited[pi] != stamp) {
+                    // With 50% chance, include portal destination in our enclosure
+                    // Otherwise we'll wall it off at the frontier
+                    if (random.float(f32) < 0.5) {
+                        scratch.visited[pi] = stamp;
+                        scratch.queue[tail] = partner;
+                        tail += 1;
+                    }
+                }
+            }
+        }
+    }
+
+    // Now find frontier: candidate cells that are NOT visited but are adjacent
+    // to a visited cell. These become our walls.
+    // Also: any visited candidate on the grid boundary needs a wall adjacent to
+    // the boundary, but since we can't place walls on the boundary itself outside
+    // the grid, we need to wall off those cells. Actually, if a visited cell is
+    // on the boundary, the enclosure is invalid. So we wall off visited candidates
+    // that are on the boundary too.
+
+    // Strategy: wall off unvisited candidate cells adjacent to visited cells,
+    // AND wall off portal exits that we didn't include.
+    // But simpler: place walls at every unvisited candidate that has a visited neighbor.
+    // If too many, randomly subsample. If too few, we have a tight enclosure — good.
+
+    // Collect frontier candidate indices
+    var frontierCount: usize = 0;
+    // Use a temporary buffer — boundaryBuf is big enough
+    const frontierBuf = scratch.boundaryBuf;
+
+    for (candidates, 0..) |pos, i| {
+        if (pos.row == puzzle.horseRow and pos.col == puzzle.horseCol) continue;
+        const ci = pos.row * cols + pos.col;
+        if (scratch.visited[ci] == stamp) continue; // inside the enclosure, not a wall
+
+        // Check if any cardinal neighbor is visited
+        var adjVisited = false;
+        if (pos.row > 0 and scratch.visited[ci - cols] == stamp) adjVisited = true;
+        if (!adjVisited and pos.row + 1 < rows and scratch.visited[ci + cols] == stamp) adjVisited = true;
+        if (!adjVisited and pos.col > 0 and scratch.visited[ci - 1] == stamp) adjVisited = true;
+        if (!adjVisited and pos.col + 1 < cols and scratch.visited[ci + 1] == stamp) adjVisited = true;
+
+        // Also check if this candidate is a portal exit adjacent to visited portal entrance
+        // (portals can teleport, so a portal exit that's unvisited and whose entrance is
+        // visited means we need to block it)
+        if (!adjVisited and puzzle.grid[ci].type == .portal) {
+            for (puzzle.portals) |pp| {
+                const partner = portalPartner(pp, pos.row, pos.col) orelse continue;
+                const pi = partner.row * cols + partner.col;
+                if (scratch.visited[pi] == stamp) {
+                    adjVisited = true;
+                    break;
+                }
+            }
+        }
+
+        if (adjVisited) {
+            if (frontierCount < frontierBuf.len) {
+                frontierBuf[frontierCount] = i;
+                frontierCount += 1;
+            }
+        }
+    }
+
+    // But wait — portals that are visited but whose exit is unvisited need to be
+    // blocked. We can't place a wall on a portal tile, so we need to wall off
+    // grass tiles adjacent to the portal exit. Let's also check: for each visited
+    // portal, if its partner is unvisited, we need to wall off candidates adjacent
+    // to the partner (or wall off the cell before the portal on our side).
+    // Actually the simpler approach: wall off candidate grass cells adjacent to
+    // unvisited portal exits. The loop above already handles this via the portal
+    // check. But we also need to handle: visited portals whose exit is not a
+    // candidate (e.g. surrounded by non-candidate cells). In that case we need
+    // to wall off the entrance side. Let's handle this by walling off candidate
+    // cells adjacent to the portal entrance on our side.
+    // For now, let's trust the frontier logic and place walls.
+
+    if (frontierCount <= puzzle.budget) {
+        // Place all frontier walls
+        for (frontierBuf[0..frontierCount]) |ci| {
+            individual.placeWall(ci, candidates[ci], cols);
+        }
+        // Fill remaining budget with random walls (won't hurt validity, might help)
+        var attempts: usize = 0;
+        while (individual.wallCount < puzzle.budget and attempts < candidates.len * 2) {
+            const ri = random.intRangeLessThan(usize, 0, candidates.len);
+            if (!individual.walls[ri]) {
+                individual.placeWall(ri, candidates[ri], cols);
+            }
+            attempts += 1;
+        }
+    } else {
+        // Too many frontier cells — shuffle and pick budget-worth
+        // Fisher-Yates on frontierBuf
+        var j: usize = frontierCount - 1;
+        while (j > 0) : (j -= 1) {
+            const k = random.intRangeLessThan(usize, 0, j + 1);
+            const tmp = frontierBuf[j];
+            frontierBuf[j] = frontierBuf[k];
+            frontierBuf[k] = tmp;
+        }
+        for (frontierBuf[0..puzzle.budget]) |ci| {
+            individual.placeWall(ci, candidates[ci], cols);
+        }
+    }
+}
+
 /// Randomly initialize an individual's wall placement.
 /// Clears only previously-set cells in O(wallCount), not O(gridSize).
 fn randomizeWalls(individual: *Individual, candidates: []const Pos, cols: usize, budget: u32, random: std.Random) void {
@@ -974,7 +1157,7 @@ fn solve(puzzle: *const Puzzle, candidates: []const Pos, random: std.Random, pop
     var next = popB;
 
     // Initialize population: seed first slot(s) from pre-placed walls if provided,
-    // fill the rest randomly.
+    // fill the rest with constructive heuristic.
     var startIdx: usize = 0;
     if (seedWalls) |sw| {
         // Slot 0: exact pre-placed solution, then fill any remaining budget randomly
@@ -1003,8 +1186,32 @@ fn solve(puzzle: *const Puzzle, candidates: []const Pos, random: std.Random, pop
         startIdx = @min(2, popSize);
     }
 
-    for (population[startIdx..]) |*individual| {
-        randomizeWalls(individual, candidates, puzzle.cols, puzzle.budget, random);
+    // Use constructive initialization for most of the population.
+    // Vary maxCells to create diverse enclosure sizes.
+    // Reserve a few slots for random init to maintain exploration diversity.
+    const randomSlots = @max(2, popSize / 5); // 20% random
+    const constructiveSlots = if (popSize > startIdx + randomSlots)
+        popSize - startIdx - randomSlots
+    else
+        0;
+    for (population[startIdx..], startIdx..) |*individual, idx| {
+        if (constructiveSlots == 0 or idx >= startIdx + constructiveSlots) {
+            // Random init for exploration diversity
+            randomizeWalls(individual, candidates, puzzle.cols, puzzle.budget, random);
+        } else {
+            // Constructive init with varied enclosure sizes
+            // maxCells ranges from small (just horse + neighbors) to large (most of budget worth)
+            const slot = idx - startIdx;
+            const minCells: usize = 2;
+            // Max cells we can enclose is roughly budget (walls form frontier)
+            // but can be much larger if natural barriers help
+            const maxAllowed: usize = @max(4, puzzle.budget * 3);
+            const maxCells = if (constructiveSlots <= 1)
+                maxAllowed / 2
+            else
+                minCells + (slot * (maxAllowed - minCells)) / (constructiveSlots - 1);
+            constructiveInit(individual, candidates, puzzle, &scratch, maxCells, random);
+        }
         evaluateFitness(individual, candidates, puzzle, &scratch);
     }
 
@@ -1108,9 +1315,16 @@ fn solve(puzzle: *const Puzzle, candidates: []const Pos, random: std.Random, pop
             temperature = 5.0;
             restartCount += 1;
 
-            // Reinitialize everyone except elites
+            // Reinitialize everyone except elites — use mix of constructive + random
             for (eliteCount..popSize) |i| {
-                randomizeWalls(&population[i], candidates, puzzle.cols, puzzle.budget, random);
+                if (i % 3 == 0) {
+                    // Random for diversity
+                    randomizeWalls(&population[i], candidates, puzzle.cols, puzzle.budget, random);
+                } else {
+                    // Constructive with random size
+                    const maxCells = random.intRangeLessThan(usize, 2, @max(4, puzzle.budget * 3));
+                    constructiveInit(&population[i], candidates, puzzle, &scratch, maxCells, random);
+                }
                 evaluateFitness(&population[i], candidates, puzzle, &scratch);
             }
 
@@ -1289,6 +1503,12 @@ pub fn main() !void {
         }
     }
 
+    // Independently verify the final solution with a fresh BFS on the actual grid.
+    // The GA's internal valid flag may be stale after pruneWalls or other mutations.
+    // Pass null for isWallMap since walls are now baked into puzzle.grid itself.
+    const verifyResult = bfs(&puzzle, null, &scratch, false);
+    const isValid = !verifyResult.reachesBoundary;
+
     // Write the required output format to stdout:
     //   Line 1: score
     //   Next R lines: the grid
@@ -1296,7 +1516,7 @@ pub fn main() !void {
     defer outBuf.deinit(allocator);
     try outBuf.ensureTotalCapacity(allocator, puzzle.rows * (puzzle.cols + 1) + 16);
     const w = outBuf.writer(allocator);
-    try w.print("{}\n", .{best.score});
+    try w.print("{}\n", .{verifyResult.score});
     for (0..puzzle.rows) |row| {
         for (0..puzzle.cols) |col| {
             const ch: u8 = switch (puzzle.grid[row * puzzle.cols + col].type) {
@@ -1314,4 +1534,9 @@ pub fn main() !void {
         try outBuf.append(allocator, '\n');
     }
     try std.fs.File.stdout().writeAll(outBuf.items);
+
+    // Emit Score: and Valid: to stderr so the batch runner can parse them.
+    // These go to stderr to keep stdout clean for the assignment format.
+    std.debug.print("Score: {}\n", .{verifyResult.score});
+    std.debug.print("Valid: {}\n", .{isValid});
 }

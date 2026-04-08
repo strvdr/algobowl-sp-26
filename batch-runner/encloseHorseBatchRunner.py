@@ -2,26 +2,19 @@
 """
 Enclose Horse Batch Runner
 ============================
-Runs the compiled Zig solver on all scraped puzzle .txt files, reading
-metadata (budget, optimal score) from each puzzle's companion .json file.
+Runs the compiled Zig solver on all puzzle .txt files in a directory.
+JSON metadata files are optional — budget, rows, and cols are parsed
+directly from each .txt file if no companion .json exists.
 
 Usage:
-    python run_all_puzzles.py                              # Defaults: ./main solver, ./puzzles dir
-    python run_all_puzzles.py --solver ./zig-out/bin/main  # Custom solver path
-    python run_all_puzzles.py --puzzle-dir ./my_puzzles     # Custom puzzle directory
-    python run_all_puzzles.py --timeout 60                  # Custom timeout per puzzle
+    python encloseHorseBatchRunner.py                              # Defaults: ./main solver, ./puzzles dir
+    python encloseHorseBatchRunner.py --solver ./zig-out/bin/main  # Custom solver path
+    python encloseHorseBatchRunner.py --puzzle-dir ./my_puzzles     # Custom puzzle directory
+    python encloseHorseBatchRunner.py --timeout 60                  # Custom timeout per puzzle
 
-Expected file layout (from enclose_horse_scraper.py):
-    puzzles/
-        puzzle_2026-03-12.txt    ← assignment-format input
-        puzzle_2026-03-12.json   ← metadata: {"budget": 10, "optimal_score": 50, ...}
-        ...
-
-For each puzzle, the script runs:
-    <solver> <puzzle.txt>
-
-and saves combined stdout+stderr to:
-    puzzles/results/puzzle_2026-03-12_result.txt
+Output format from solver:
+    stdout: score on line 1, then R lines of the grid
+    stderr: "Score: X" and "Valid: true/false" for batch runner parsing
 """
 
 import argparse
@@ -31,16 +24,25 @@ import sys
 from pathlib import Path
 
 
-def findPuzzles(puzzle_dir: Path) -> list[tuple[Path, Path]]:
-    """Find all (txt, json) pairs sorted by date."""
+def parseTxtMeta(txtPath: Path) -> dict:
+    """Parse budget, rows, cols directly from a puzzle .txt file."""
+    try:
+        lines = txtPath.read_text().splitlines()
+        budget = int(lines[0].strip())
+        dims = lines[1].strip().split()
+        rows, cols = int(dims[0]), int(dims[1])
+        return {"budget": budget, "rows": rows, "cols": cols}
+    except Exception:
+        return {"budget": "?", "rows": "?", "cols": "?"}
+
+
+def findPuzzles(puzzle_dir: Path) -> list[tuple[Path, Path | None]]:
+    """Find all .txt puzzle files, paired with optional .json metadata."""
     txts = sorted(puzzle_dir.glob("*.txt"))
     pairs = []
     for txtPath in txts:
         jsonPath = txtPath.with_suffix(".json")
-        if jsonPath.exists():
-            pairs.append((txtPath, jsonPath))
-        else:
-            pairs.append((txtPath, None))
+        pairs.append((txtPath, jsonPath if jsonPath.exists() else None))
     return pairs
 
 
@@ -79,11 +81,9 @@ def runSolver(solverPath: Path, puzzlePath: Path, outputPath: Path, timeout: int
 
 
 def extractScore(outputPath: Path) -> int | None:
-    """Extract the numeric score from Zig solver output."""
+    """Extract the numeric score from solver stderr output (Score: X line)."""
     try:
-        text = outputPath.read_text()
-        for line in text.splitlines():
-            # Match "Score: <number>" but not "Score from BFS:"
+        for line in outputPath.read_text().splitlines():
             stripped = line.strip()
             if stripped.startswith("Score:"):
                 parts = stripped.split()
@@ -98,10 +98,9 @@ def extractScore(outputPath: Path) -> int | None:
 
 
 def extractValid(outputPath: Path) -> bool | None:
-    """Extract whether the solution is valid from Zig solver output."""
+    """Extract validity from solver stderr output (Valid: true/false line)."""
     try:
-        text = outputPath.read_text()
-        for line in text.splitlines():
+        for line in outputPath.read_text().splitlines():
             stripped = line.strip()
             if stripped.startswith("Valid:"):
                 return "true" in stripped.lower()
@@ -111,9 +110,9 @@ def extractValid(outputPath: Path) -> bool | None:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Batch-run Zig enclose horse solver on scraped puzzles")
+    parser = argparse.ArgumentParser(description="Batch-run Zig enclose horse solver on puzzles")
     parser.add_argument("--puzzle-dir", type=Path, default=Path("puzzles"),
-                        help="Directory containing .txt + .json puzzle files (default: ./puzzles)")
+                        help="Directory containing .txt puzzle files (default: ./puzzles)")
     parser.add_argument("--solver", type=Path, default=Path("main"),
                         help="Path to the compiled Zig solver binary (default: ./main)")
     parser.add_argument("--timeout", type=int, default=300,
@@ -122,25 +121,23 @@ def main():
 
     if not args.solver.exists():
         print(f"ERROR: Solver not found at {args.solver}")
-        print(f"  Compile it first: zig build-exe main.zig -O ReleaseFast")
+        print(f"  Compile it first: zig build -Doptimize=ReleaseFast")
         sys.exit(1)
 
     if not args.puzzle_dir.exists():
         print(f"ERROR: Puzzle directory not found at {args.puzzle_dir}")
-        print(f"  Run the scraper first:")
-        print(f"    python enclose_horse_scraper.py 2025-12-30 2026-03-20")
         sys.exit(1)
 
     pairs = findPuzzles(args.puzzle_dir)
     if not pairs:
-        print(f"No puzzle .txt + .json pairs found in {args.puzzle_dir}")
+        print(f"No .txt puzzle files found in {args.puzzle_dir}")
         sys.exit(1)
 
     resultsDir = args.puzzle_dir / "results"
     resultsDir.mkdir(exist_ok=True)
 
     print(f"Found {len(pairs)} puzzle(s) in {args.puzzle_dir}")
-    print(f"Solver: {args.solver}")
+    print(f"Solver:  {args.solver}")
     print(f"Timeout: {args.timeout}s per puzzle")
     print(f"Results: {resultsDir}/")
     print("=" * 70)
@@ -151,20 +148,22 @@ def main():
     totalPuzzles = 0
 
     for i, (txtPath, jsonPath) in enumerate(pairs, 1):
+        # Load metadata: prefer JSON if present, otherwise parse the txt directly
         if jsonPath is not None:
             meta = json.loads(jsonPath.read_text())
         else:
-            meta = {"date": txtPath.stem, "budget": "?"}
-        puzzleDate = meta.get("date", txtPath.stem)
-        budget = meta.get("budget", "?")
-        name = meta.get("name", "")
-        optimal = meta.get("optimal_score")
-        rows = meta.get("rows", "?")
-        cols = meta.get("cols", "?")
+            meta = parseTxtMeta(txtPath)
 
-        outputPath = resultsDir / f"puzzle_{puzzleDate}_result.txt"
+        puzzleName = meta.get("date", txtPath.stem)
+        budget     = meta.get("budget", "?")
+        name       = meta.get("name", "")
+        optimal    = meta.get("optimal_score")
+        rows       = meta.get("rows", "?")
+        cols       = meta.get("cols", "?")
 
-        header = f"\n[{i}/{len(pairs)}] {puzzleDate}"
+        outputPath = resultsDir / f"{txtPath.stem}_result.txt"
+
+        header = f"\n[{i}/{len(pairs)}] {puzzleName}"
         if name:
             header += f" — {name}"
         header += f" ({rows}x{cols}, budget={budget})"
@@ -200,21 +199,21 @@ def main():
 
         totalPuzzles += 1
         print(f"  → {status}")
-        summary.append((puzzleDate, name, budget, score, valid, optimal, status))
+        summary.append((puzzleName, name, budget, score, valid, optimal, status))
 
-    # Print summary table
+    # Summary table
     print("\n" + "=" * 70)
     print("SUMMARY")
     print("=" * 70)
-    print(f"{'Date':<12} {'Budget':>6} {'Score':>7} {'Optimal':>7} {'Gap':>5} {'Status':<15}")
+    print(f"{'Puzzle':<20} {'Budget':>6} {'Score':>7} {'Optimal':>7} {'Gap':>5} {'Status':<15}")
     print("-" * 70)
 
     totalGap = 0
     totalWithOptimal = 0
 
-    for puzzleDate, name, budget, score, valid, optimal, status in summary:
+    for puzzleName, name, budget, score, valid, optimal, status in summary:
         scoreStr = str(score) if score is not None else "-"
-        optStr = str(optimal) if optimal else "?"
+        optStr   = str(optimal) if optimal else "?"
 
         if score is not None and optimal and valid:
             gap = int(optimal) - score
@@ -224,43 +223,27 @@ def main():
         else:
             gapStr = "-"
 
-        if valid is None:
-            validStr = "FAILED"
-        elif valid:
-            validStr = "VALID"
-        else:
-            validStr = "INVALID"
-
-        print(f"{puzzleDate:<12} {str(budget):>6} {scoreStr:>7} {optStr:>7} {gapStr:>5} {validStr:<15}")
+        validStr = "FAILED" if valid is None else ("VALID" if valid else "INVALID")
+        print(f"{puzzleName:<20} {str(budget):>6} {scoreStr:>7} {optStr:>7} {gapStr:>5} {validStr:<15}")
 
     print("-" * 70)
     print(f"Puzzles: {totalPuzzles}  |  Solved: {totalSolved}  |  Optimal: {totalOptimal}", end="")
     if totalWithOptimal > 0:
-        avgGap = totalGap / totalWithOptimal
-        print(f"  |  Avg gap: {avgGap:.1f}")
+        print(f"  |  Avg gap: {totalGap / totalWithOptimal:.1f}")
     else:
         print()
 
-    # Save summary to file
+    # Save summary
     summaryPath = resultsDir / "summary.txt"
     with open(summaryPath, "w") as f:
-        f.write(f"{'Date':<12} {'Budget':>6} {'Score':>7} {'Optimal':>7} {'Gap':>5} {'Status':<15}\n")
+        f.write(f"{'Puzzle':<20} {'Budget':>6} {'Score':>7} {'Optimal':>7} {'Gap':>5} {'Status':<15}\n")
         f.write("-" * 70 + "\n")
-        for puzzleDate, name, budget, score, valid, optimal, status in summary:
+        for puzzleName, name, budget, score, valid, optimal, status in summary:
             scoreStr = str(score) if score is not None else "-"
-            optStr = str(optimal) if optimal else "?"
-            if score is not None and optimal and valid:
-                gapStr = str(int(optimal) - score)
-            else:
-                gapStr = "-"
-            if valid is None:
-                validStr = "FAILED"
-            elif valid:
-                validStr = "VALID"
-            else:
-                validStr = "INVALID"
-            f.write(f"{puzzleDate:<12} {str(budget):>6} {scoreStr:>7} {optStr:>7} {gapStr:>5} {validStr:<15}\n")
-
+            optStr   = str(optimal) if optimal else "?"
+            gapStr   = str(int(optimal) - score) if (score is not None and optimal and valid) else "-"
+            validStr = "FAILED" if valid is None else ("VALID" if valid else "INVALID")
+            f.write(f"{puzzleName:<20} {str(budget):>6} {scoreStr:>7} {optStr:>7} {gapStr:>5} {validStr:<15}\n")
         f.write("-" * 70 + "\n")
         f.write(f"Puzzles: {totalPuzzles}  |  Solved: {totalSolved}  |  Optimal: {totalOptimal}")
         if totalWithOptimal > 0:
