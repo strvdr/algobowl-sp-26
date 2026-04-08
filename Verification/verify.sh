@@ -1,30 +1,31 @@
 #!/bin/bash
 # Eddie Silva
 
-[ "$#" -ne 2 ] && echo "Usage: $0 <inputs_dir> <outputs_dir>" && exit 1
+[ "$#" -ne 2 ] && echo "Usage: $0 <single_input_file> <outputs_dir>" && exit 1
 
-# find the directory where this script lives (Verification/)
+IN_FILE="$1"
+OUT_DIR="$2"
+
+[ ! -f "$IN_FILE" ] && echo "Error: Input '$IN_FILE' not found." && exit 1
+[ ! -d "$OUT_DIR" ] && echo "Error: Directory '$OUT_DIR' not found." && exit 1
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
-# Force the report to be saved next to the script
 REPORT="$SCRIPT_DIR/results.txt"
+
+# Initialize report
 > "$REPORT"
 
 shopt -s nullglob
 
-for in_file in "$1"/input_*.txt; do
-    base=$(basename "$in_file")
-    out_file="$2/puzzle_${base%.txt}_result.txt"
+# Loop through every text file in the outputs directory
+for out_file in "$OUT_DIR"/*.txt; do
+    base_out=$(basename "$out_file")
 
-    echo "Verifying $base..."
-    echo -e "\n$base" >> "$REPORT"
+    echo "Verifying $base_out..."
+    echo -e "\n--- $base_out ---" >> "$REPORT"
 
-    if [ -f "$out_file" ]; then
-        # Explicitly call verify.py using the script's directory path
-        python3 "$SCRIPT_DIR/verify.py" "$in_file" "$out_file" >> "$REPORT" 2>&1
-    else
-        echo "Missing output file: $out_file" >> "$REPORT"
-    fi
+    # Run Python with the single input file and the current output file
+    python3 "$SCRIPT_DIR/verify.py" "$IN_FILE" "$out_file" >> "$REPORT" 2>&1
 done
 
 echo "Done. Check $REPORT"
