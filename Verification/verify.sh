@@ -49,6 +49,7 @@ find_matching_output() {
     local output_dir="$2"
     local input_base
     local input_stem
+    local group_num
     local candidate
 
     input_base=$(basename "$input_file")
@@ -59,6 +60,20 @@ find_matching_output() {
         return 0
     fi
 
+    # Extract group number from input file (e.g., 1161 from input_group1161)
+    group_num="${input_stem##*group}"
+
+    # Remove trailing slash from output_dir if present for glob matching
+    output_dir="${output_dir%/}"
+
+    # Look for output file with pattern output_from_*_to_<group_num>
+    for candidate in $output_dir/output_from_*_to_${group_num}.txt; do
+        [ -e "$candidate" ] || continue
+        echo "$candidate"
+        return 0
+    done
+
+    # Fallback to old naming convention
     for candidate in "$output_dir"/*.txt; do
         [ -e "$candidate" ] || continue
         case "$(basename "$candidate")" in
@@ -75,9 +90,14 @@ find_matching_output() {
 if [ -f "$IN_FILE" ] && [ -f "$OUT_DIR" ]; then
     verify_pair "$IN_FILE" "$OUT_DIR"
 elif [ -f "$IN_FILE" ] && [ -d "$OUT_DIR" ]; then
-    for out_file in "$OUT_DIR"/*.txt; do
+    out_file=$(find_matching_output "$IN_FILE" "$OUT_DIR") || true
+    if [ -z "$out_file" ]; then
+        echo "Missing output for $(basename "$IN_FILE")"
+        echo -e "\n$(basename "$IN_FILE")" >> "$REPORT"
+        echo "Error: No matching output found in '$OUT_DIR'." >> "$REPORT"
+    else
         verify_pair "$IN_FILE" "$out_file"
-    done
+    fi
 elif [ -d "$IN_FILE" ] && [ -f "$OUT_DIR" ]; then
     for in_file in "$IN_FILE"/*.txt; do
         verify_pair "$in_file" "$OUT_DIR"

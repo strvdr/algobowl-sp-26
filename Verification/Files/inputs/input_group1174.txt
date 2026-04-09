@@ -1,0 +1,14 @@
+4
+11 11
+###########
+#ab.bab#ba#
+#b##bbb##b#
+#####W###.#
+#bb#bbb#bb#
+#abWbHbWba#
+#bb#bbb#bb#
+#.###W#####
+#b##bbb##b#
+#ab#bab.ba#
+###########
+0
