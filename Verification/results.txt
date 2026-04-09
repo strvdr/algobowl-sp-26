@@ -1,141 +1,141 @@
 
-input_group1161.txt
+puzzle_input_group1161_result.txt:
 Verdict: VALID (Enclosed successfully. Score: -71, Walls Used: 5/23)
 
-input_group1162.txt
+puzzle_input_group1162_result.txt:
 Verdict: VALID (Enclosed successfully. Score: 80, Walls Used: 3/3)
 
-input_group1163.txt
+puzzle_input_group1163_result.txt:
 Verdict: VALID (Enclosed successfully. Score: 39, Walls Used: 6/6)
 
-input_group1164.txt
+puzzle_input_group1164_result.txt:
 Verdict: VALID (Enclosed successfully. Score: 64, Walls Used: 8/8)
 
-input_group1165.txt
+puzzle_input_group1165_result.txt:
 Verdict: VALID (Enclosed successfully. Score: 1, Walls Used: 4/100)
 
-input_group1166.txt
+puzzle_input_group1166_result.txt:
 Verdict: VALID (Enclosed successfully. Score: 1, Walls Used: 4/6)
 
-input_group1167.txt
+puzzle_input_group1167_result.txt:
 Verdict: VALID (Enclosed successfully. Score: 373, Walls Used: 24/25)
 
-input_group1168.txt
+puzzle_input_group1168_result.txt:
 Verdict: VALID (Enclosed successfully. Score: 19, Walls Used: 7/7)
 
-input_group1169.txt
+puzzle_input_group1169_result.txt:
 Verdict: VALID (Enclosed successfully. Score: 93, Walls Used: 10/25)
 
-input_group1170.txt
+puzzle_input_group1170_result.txt:
 Verdict: VALID (Enclosed successfully. Score: 3, Walls Used: 10/40)
 
-input_group1171.txt
+puzzle_input_group1171_result.txt:
 Verdict: VALID (Enclosed successfully. Score: 43, Walls Used: 8/8)
 
-input_group1172.txt
+puzzle_input_group1172_result.txt:
 Verdict: VALID (Enclosed successfully. Score: 268, Walls Used: 13/40)
 
-input_group1173.txt
+puzzle_input_group1173_result.txt:
 Verdict: VALID (Enclosed successfully. Score: 9069, Walls Used: 12/500)
 
-input_group1174.txt
+puzzle_input_group1174_result.txt:
 Verdict: VALID (Enclosed successfully. Score: -35, Walls Used: 3/4)
 
-input_group1175.txt
+puzzle_input_group1175_result.txt:
 Verdict: VALID (Enclosed successfully. Score: 97, Walls Used: 10/11)
 
-input_group1176.txt
+puzzle_input_group1176_result.txt:
 Verdict: VALID (Enclosed successfully. Score: 169, Walls Used: 20/20)
 
-input_group1177.txt
+puzzle_input_group1177_result.txt:
 Verdict: VALID (Enclosed successfully. Score: 2, Walls Used: 6/72)
 
-input_group1178.txt
+puzzle_input_group1178_result.txt:
 Verdict: VALID (Enclosed successfully. Score: 34, Walls Used: 6/6)
 
-input_group1179.txt
+puzzle_input_group1179_result.txt:
 Verdict: VALID (Enclosed successfully. Score: 1, Walls Used: 1/155)
 
-input_group1180.txt
+puzzle_input_group1180_result.txt:
 Verdict: VALID (Enclosed successfully. Score: 24, Walls Used: 4/50)
 
-input_group1181.txt
+puzzle_input_group1181_result.txt:
 Verdict: VALID (Enclosed successfully. Score: 44, Walls Used: 9/40)
 
-input_group1182.txt
+puzzle_input_group1182_result.txt:
 Verdict: VALID (Enclosed successfully. Score: 61, Walls Used: 11/11)
 
-input_group1183.txt
+puzzle_input_group1183_result.txt:
 Verdict: VALID (Enclosed successfully. Score: 1520, Walls Used: 6/6)
 
-input_group1184.txt
+puzzle_input_group1184_result.txt:
 Verdict: VALID (Enclosed successfully. Score: 1, Walls Used: 4/192)
 
-input_group1185.txt
+puzzle_input_group1185_result.txt:
 Verdict: VALID (Enclosed successfully. Score: 1, Walls Used: 4/200)
 
-input_group1186.txt
+puzzle_input_group1186_result.txt:
 Verdict: VALID (Enclosed successfully. Score: 4, Walls Used: 4/15)
 
-input_group1187.txt
+puzzle_input_group1187_result.txt:
 Verdict: VALID (Enclosed successfully. Score: 13, Walls Used: 6/182)
 
-input_group1188.txt
+puzzle_input_group1188_result.txt:
 Verdict: VALID (Enclosed successfully. Score: -38389, Walls Used: 1/1)
 
-input_group1189.txt
+puzzle_input_group1189_result.txt:
 Verdict: VALID (Enclosed successfully. Score: 46, Walls Used: 9/9)
 
-input_group1190.txt
+puzzle_input_group1190_result.txt:
 Verdict: VALID (Enclosed successfully. Score: 2, Walls Used: 3/1327)
 
-input_group1191.txt
+puzzle_input_group1191_result.txt:
 Verdict: VALID (Enclosed successfully. Score: 1, Walls Used: 4/200)
 
-input_group1192.txt
+puzzle_input_group1192_result.txt:
 Verdict: VALID (Enclosed successfully. Score: 246, Walls Used: 20/20)
 
-input_group1193.txt
+puzzle_input_group1193_result.txt:
 Verdict: VALID (Enclosed successfully. Score: 13109, Walls Used: 16/50)
 
-input_group1194.txt
+puzzle_input_group1194_result.txt:
 Verdict: VALID (Enclosed successfully. Score: 93, Walls Used: 9/10)
 
-input_group1195.txt
+puzzle_input_group1195_result.txt:
 Verdict: VALID (Enclosed successfully. Score: 4, Walls Used: 2/10)
 
-input_group1196.txt
+puzzle_input_group1196_result.txt:
 Verdict: VALID (Enclosed successfully. Score: 35, Walls Used: 8/414)
 
-input_group1197.txt
+puzzle_input_group1197_result.txt:
 Verdict: VALID (Enclosed successfully. Score: 9, Walls Used: 8/8)
 
-input_group1198.txt
+puzzle_input_group1198_result.txt:
 Verdict: VALID (Enclosed successfully. Score: 102, Walls Used: 12/12)
 
-input_group1199.txt
+puzzle_input_group1199_result.txt:
 Verdict: VALID (Enclosed successfully. Score: 76, Walls Used: 2/9)
 
-input_group1200.txt
+puzzle_input_group1200_result.txt:
 Verdict: VALID (Enclosed successfully. Score: 182, Walls Used: 11/12)
 
-input_group1201.txt
+puzzle_input_group1201_result.txt:
 Verdict: VALID (Enclosed successfully. Score: 2, Walls Used: 6/20)
 
-input_group1202.txt
+puzzle_input_group1202_result.txt:
 Verdict: VALID (Enclosed successfully. Score: 7, Walls Used: 8/10)
 
-input_group1203.txt
+puzzle_input_group1203_result.txt:
 Verdict: VALID (Enclosed successfully. Score: 65, Walls Used: 7/8)
 
-input_group1204.txt
+puzzle_input_group1204_result.txt:
 Verdict: VALID (Enclosed successfully. Score: 6095, Walls Used: 0/893)
 
-input_group1205.txt
+puzzle_input_group1205_result.txt:
 Verdict: VALID (Enclosed successfully. Score: 5169, Walls Used: 48/1000)
 
-input_group1227.txt
+puzzle_input_group1227_result.txt:
 Verdict: VALID (Enclosed successfully. Score: 718, Walls Used: 41/665)
 
-input_group1228.txt
+puzzle_input_group1228_result.txt:
 Verdict: VALID (Enclosed successfully. Score: 76, Walls Used: 9/100)

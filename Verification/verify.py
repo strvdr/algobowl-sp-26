@@ -10,6 +10,7 @@ Usage:
 import sys
 from pathlib import Path
 from collections import deque
+from itertools import zip_longest
 
 def parse_input(file_path):
     with file_path.open('r') as f:
@@ -34,7 +35,10 @@ def parse_input(file_path):
 
 def parse_output(file_path, R):
     with file_path.open('r') as f:
-        lines = [line.strip() for line in f if line.strip()]
+        lines = [line.rstrip('\n\r') for line in f]
+
+    if len(lines) != R + 1:
+        raise ValueError("Error: Output file must contain exactly one score line and R grid lines.")
 
     reported_score = int(lines[0])
     grid = []
@@ -43,13 +47,45 @@ def parse_output(file_path, R):
 
     return reported_score, grid
 
+def print_grid_diff(in_grid, out_grid):
+    print("Input/Output diff:")
+    changed = False
+
+    for row_index, (in_row, out_row) in enumerate(zip_longest(in_grid, out_grid, fillvalue=[])):
+        in_line = ''.join(in_row)
+        out_line = ''.join(out_row)
+
+        if in_line == out_line:
+            continue
+
+        changed = True
+        marker_len = max(len(in_line), len(out_line))
+        marker = []
+        for col in range(marker_len):
+            in_char = in_line[col] if col < len(in_line) else ' '
+            out_char = out_line[col] if col < len(out_line) else ' '
+            marker.append('^' if in_char != out_char else ' ')
+
+        print(f"Row {row_index}:")
+        print(f"  input : {in_line}")
+        print(f"  output: {out_line}")
+        print(f"  diff  : {''.join(marker)}")
+
+    if not changed:
+        print("  (no grid differences)")
+
 def verify(input_file, output_file):
     W_budget, R, C, in_grid, portals = parse_input(input_file)
-    reported_score, out_grid = parse_output(output_file, R)
+    try:
+        reported_score, out_grid = parse_output(output_file, R)
+    except (ValueError, IndexError) as exc:
+        print(exc)
+        return False
 
     # Dimension Validation
     if len(out_grid) != R or any(len(row) != C for row in out_grid):
         print("Error: Output grid dimensions do not match input.")
+        print_grid_diff(in_grid, out_grid)
         return False
 
     # Tile Modification and Wall Budget Validation
@@ -69,14 +105,17 @@ def verify(input_file, output_file):
             if in_char != out_char:
                 if not (in_char in ['.', 'W'] and out_char in ['.', 'W']):
                     print(f"Error: Invalid tile modification at ({r}, {c}). Changed '{in_char}' to '{out_char}'.")
+                    print_grid_diff(in_grid, out_grid)
                     return False
 
     if walls_used > W_budget:
         print(f"Error: Wall budget exceeded. Used {walls_used}, Budget {W_budget}.")
+        print_grid_diff(in_grid, out_grid)
         return False
 
     if not start:
         print("Error: Horse 'H' missing from output grid.")
+        print_grid_diff(in_grid, out_grid)
         return False
 
     # BFS Traversal for Perimeter Check and Scoring
@@ -111,8 +150,10 @@ def verify(input_file, output_file):
 
     if escaped:
         print("Verdict: INVALID (Horse escaped to perimeter)")
+        print_grid_diff(in_grid, out_grid)
     elif calculated_score != reported_score:
         print(f"Verdict: INVALID (Score mismatch. Reported: {reported_score}, Calculated: {calculated_score})")
+        print_grid_diff(in_grid, out_grid)
     else:
         print(f"Verdict: VALID (Enclosed successfully. Score: {calculated_score}, Walls Used: {walls_used}/{W_budget})")
 
