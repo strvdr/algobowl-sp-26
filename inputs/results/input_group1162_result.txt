@@ -10,5 +10,6 @@
 ##......#a#
 #p.#....##.
 .#####W##..
+Validation OK: 3 walls (budget 3), score 80, 60 reachable tiles
 Score: 80
 Valid: true

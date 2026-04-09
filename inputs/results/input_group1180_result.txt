@@ -99,5 +99,6 @@ c.####..a.b#a...###.pp..a##b#..pb#bcc#ba#ab.a##....#ba##pb.ab...abb.#..b##ccb.#a
 .b#.#..ab.c.b#.....#a###.b####..bbb.a..##b##...##.cb..#bc..####.#a#.#b##ab#.....b##.b###.##.##.a.#aa
 ...c#b###.b.b#.b..apc#b#..#a.###.###.#....b#.c...###.##.#a##.a..#p.b..#.........ba.#...#a##..#.bap..
 #b..c###b.cc###bba#b###b..b#.#.#.#.b#..###.bp.c.b###.#b.a##...c..#aab#b..#...#..p.a....####..##a.#..
+Validation OK: 6 walls (budget 50), score 37, 30 reachable tiles
 Score: 37
 Valid: true

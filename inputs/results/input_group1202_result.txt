@@ -1,12 +1,13 @@
-7
-..######...#
-.a.b.p.#p..#
-#.#....#c.p#
-..#.....#Wb#
-#b...###..W#
-.....#bW.H.W
-.c#b.###.W.W
-..#..#b.WpW.
-.....###..##
-Score: 7
+13
+..######W..#
+.a.b.p.#pW.#
+#.#....#cWp#
+..#.....#.b#
+#b...###.W.#
+.....#bW.HW.
+.c#b.###...W
+..#..#b.Wp.W
+.....###.W##
+Validation OK: 10 walls (budget 10), score 13, 10 reachable tiles
+Score: 13
 Valid: true

@@ -99,5 +99,6 @@
 #a#a#bbbbbbbbbbbaa###bbbaaaaaaaaa#...a.#...#a...a..a..#....a#b.bbbbbb.bb.a.p.bbba.aaaaaaa#a##.....#a
 #a#a##############################.a...a..a...a...a...a..a.a#bbb.b.b.bbbaa###b.baaa.aa.aa#a########a
 ###baacaaaacaaaaacaaaaaaaaacaaaaaa.........................a##############################caaaaaaaab
+Validation OK: 1 walls (budget 155), score 1, 1 reachable tiles
 Score: 1
 Valid: true

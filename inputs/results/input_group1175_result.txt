@@ -1,12 +1,12 @@
-97
-#.#.#.#.#####
-.abbbcbcbW.a#
-.bbpb..bW.b##
-#bcbbcWW.p.c#
+94
+#W#W#W#W#####
+Wabbbcbcb..a#
+Wbbpb..b..b##
+#bcbbc...p.c#
 ######....###
 #a#.b.......#
-..pW.#....c.W
-#bWc........#
+W.p..#....c.W
+#b.c........#
 #############
 #.....#.....#
 #...........#
@@ -14,5 +14,6 @@
 #b#.#.......#
 .Wp.c#......#
 #.#W#########
-Score: 97
+Validation OK: 11 walls (budget 11), score 94, 115 reachable tiles
+Score: 94
 Valid: true

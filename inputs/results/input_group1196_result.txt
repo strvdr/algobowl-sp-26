@@ -99,5 +99,6 @@ p#pb...b.a.b.b..#b.b.b.b.b.a.b.b.b.#.a.c.b.b.c.c.b#b.b.b.b.c.b.#.#.a.a.b.b.b.b.b
 .#pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp#p
 p##################################################################################################.
 .p.p.p.p.p.p.p#p.p.p.p.p.p.p.p.p.p.p.p.p.p.p.p.p.p#p.p.p.p.p.p.p.p.p.p.p.p.p.p.p.p.p.p#p.p.p.p.p.p.p
+Validation OK: 8 walls (budget 414), score 35, 5 reachable tiles
 Score: 35
 Valid: true

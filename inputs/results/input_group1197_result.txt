@@ -1,12 +1,13 @@
-9
+8
 .#W......#
 #Hp#.....c
-.#W.......
-..........
+.#.W......
+..W.......
 ....###ba.
 ..abW..W..
 ..abW.p#..
-...#...#..
-....WWW...
-Score: 9
+...#.W.#..
+......W...
+Validation OK: 8 walls (budget 8), score 8, 8 reachable tiles
+Score: 8
 Valid: true

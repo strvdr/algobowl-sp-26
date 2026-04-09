@@ -10,5 +10,6 @@
 #b##bbb##b#
 #ab#bab.ba#
 ###########
+Validation OK: 4 walls (budget 4), score -31, 9 reachable tiles
 Score: -31
 Valid: true

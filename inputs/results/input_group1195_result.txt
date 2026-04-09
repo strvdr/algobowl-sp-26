@@ -10,5 +10,6 @@
 #a.bp#.##..#b#...
 .a#.bb..##.....##
 #.###.####..##.##
+Validation OK: 2 walls (budget 10), score 4, 4 reachable tiles
 Score: 4
 Valid: true

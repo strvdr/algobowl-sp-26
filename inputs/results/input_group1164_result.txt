@@ -8,5 +8,6 @@
 bbb#.b.b.a.Waaa
 bbb#.......#aaa
 bbb####W####aaa
+Validation OK: 8 walls (budget 8), score 64, 49 reachable tiles
 Score: 64
 Valid: true

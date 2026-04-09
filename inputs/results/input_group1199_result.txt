@@ -1,13 +1,14 @@
-76
+74
 ##########
 #........#
 #......Hp#
-#.......W#
+#........#
 #.c....#b#
-#..#...#W#
+#..#...#.#
 #.#a#..#.#
 #.#a#cc#p#
 #c#p#.p#b#
 ##########
-Score: 76
+Validation OK: 0 walls (budget 9), score 74, 52 reachable tiles
+Score: 74
 Valid: true

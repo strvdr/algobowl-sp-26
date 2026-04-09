@@ -9,5 +9,6 @@ W.#c..#.##
 ..W..#.#W.
 ##.#.#...#
 ##.#######
+Validation OK: 6 walls (budget 6), score 34, 28 reachable tiles
 Score: 34
 Valid: true

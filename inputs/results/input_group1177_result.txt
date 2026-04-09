@@ -1,4 +1,4 @@
-1
+3
 ....c....aa..b......b.bb...b..bb..ca#.#a..c......a#a.acc....a....c..aa.#..c#.a.ac.#a.ac...aa#ac...#.
 c..a#.c#aa#bb...b.bb...bb..bbb.b..a.a....a.cc.c...........#..c...c#.c..#c.ca..aa.cc..cc#.#aa....ca.#
 a.a#...#.a..b..b.....bbbb...b.....a...a#..c...aa..c..#a..c.c..a.c..ca.a.c#c..##.c.#..........c..#..c
@@ -50,8 +50,8 @@ b......b..bc...a...c.#.#..#...##b.bbbb.b.b..bbbb..........b.....b...bbb...b..bb.
 bb..bbb.bb..c...#.c#c##.##..##..bb........bbb...b..b.b..b.....b...b....b.bb...b.bbb.bb.b.bb.bb..bb..
 .....b.b..........a#..#.........bbbbb...bb....bbbpWbb.b.bbb....bbb...bb...b.........bbb......bb..b..
 ..bbbb.bb.....#.##a..........##...bb.b....b..b.b.WHW..b.b.bbbb.b.bb..b.b..b.b...b........b...b.b...b
-....b.b...b......c..c.#.....#.#.bbb..bb.bbbb.b....W......bbbb....b....bb..bb...bb..bbbbb....bbb.bb..
-..bb.bb.b..##.a......#.........#b.bbb....bb.b.b..b..bbb.b.b....b.b.b...b.....b......b......b...bb...
+....b.b...b......c..c.#.....#.#.bbb..bb.bbbb.b...W..W....bbbb....b....bb..bb...bb..bbbbb....bbb.bb..
+..bb.bb.b..##.a......#.........#b.bbb....bb.b.b..bWWbbb.b.b....b.b.b...b.....b......b......b...bb...
 bb.b.bb.....c.#..a....#...#.....b..bbbbb.b...b.b.bb....bbbb.bb.......bbb...b..bb....b...b....b.b...b
 .bbb..b...b.c..a##acc.###..##.#.bbb.bbb...............bb..bbbb.b....b.b...b...b......bbbb....b...bb.
 ...b...b..b#a.a...a.#.#.#.#....#b.bbb..b.bbb............b.b...b.bbb..b.b..b..b.b....bb..b.......bb.b
@@ -99,5 +99,6 @@ b..b..b....a.c.#c#..#.#..#...#....b.b.bbbbb.bb.bbbb..b.b.bb.b..bbb.bbbb.bbbb....
 .#......#...................bbb..b.#..c.c#....c...cc##.c...ca...b..bb...b.b....b.....bb.bb....b.b.b.
 .p##..#..#..bb.b..b.bb.bbbbb..bbb..#.#.c...a....##..#cc..#...#a...b..b.bbbb.b.......b....b.bbbb.b..b
 ........#..#b......bb.bbb....b..b.c..c#.c..#....a..#..a#c..c..#a.b..bbb...b.b.bb.bbb..bbbb..b.....b.
-Score: 1
+Validation OK: 7 walls (budget 72), score 3, 3 reachable tiles
+Score: 3
 Valid: true
